@@ -59,39 +59,39 @@ public interface SimpleDBMSParserConstants {
   /** RegularExpression Id. */
   int ALL = 29;
   /** RegularExpression Id. */
-  int SEMICOLON = 30;
+  int LEGAL_IDENTIFIER = 30;
   /** RegularExpression Id. */
-  int LEFT_PAREN = 31;
+  int INT_VALUE = 31;
   /** RegularExpression Id. */
-  int RIGHT_PAREN = 32;
+  int DATE_VALUE = 32;
   /** RegularExpression Id. */
-  int COMMA = 33;
+  int CHAR_STRING = 33;
   /** RegularExpression Id. */
-  int PERIOD = 34;
+  int NNNN = 34;
   /** RegularExpression Id. */
-  int UNDERSCORE = 35;
+  int NN = 35;
   /** RegularExpression Id. */
-  int SIGN = 36;
+  int SEMICOLON = 36;
   /** RegularExpression Id. */
-  int DIGIT = 37;
+  int LEFT_PAREN = 37;
   /** RegularExpression Id. */
-  int ALPHABET = 38;
+  int RIGHT_PAREN = 38;
   /** RegularExpression Id. */
-  int COMP_OP = 39;
+  int COMMA = 39;
   /** RegularExpression Id. */
-  int QUOTE = 40;
+  int PERIOD = 40;
   /** RegularExpression Id. */
-  int INT_VALUE = 41;
+  int UNDERSCORE = 41;
   /** RegularExpression Id. */
-  int DATE_VALUE = 42;
+  int SIGN = 42;
   /** RegularExpression Id. */
-  int CHAR_STRING = 43;
+  int DIGIT = 43;
   /** RegularExpression Id. */
-  int NNNN = 44;
+  int ALPHABET = 44;
   /** RegularExpression Id. */
-  int NN = 45;
+  int COMP_OP = 45;
   /** RegularExpression Id. */
-  int LEGAL_IDENTIFIER = 46;
+  int QUOTE = 46;
   /** RegularExpression Id. */
   int NON_QUOTE_CHARACTER = 47;
   /** RegularExpression Id. */
@@ -134,6 +134,12 @@ public interface SimpleDBMSParserConstants {
     "\"not\"",
     "\"is\"",
     "\"*\"",
+    "<LEGAL_IDENTIFIER>",
+    "<INT_VALUE>",
+    "<DATE_VALUE>",
+    "<CHAR_STRING>",
+    "<NNNN>",
+    "<NN>",
     "\";\"",
     "\"(\"",
     "\")\"",
@@ -145,12 +151,6 @@ public interface SimpleDBMSParserConstants {
     "<ALPHABET>",
     "<COMP_OP>",
     "\"`\"",
-    "<INT_VALUE>",
-    "<DATE_VALUE>",
-    "<CHAR_STRING>",
-    "<NNNN>",
-    "<NN>",
-    "<LEGAL_IDENTIFIER>",
     "<NON_QUOTE_CHARACTER>",
     "<NON_QUOTE_SPECIAL_CHARACTERS>",
     "<UNUSED_QUOTE_MARK>",
