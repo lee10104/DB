@@ -67,31 +67,31 @@ public interface SimpleDBMSParserConstants {
   /** RegularExpression Id. */
   int CHAR_STRING = 33;
   /** RegularExpression Id. */
-  int NNNN = 34;
+  int SEMICOLON = 34;
   /** RegularExpression Id. */
-  int NN = 35;
+  int LEFT_PAREN = 35;
   /** RegularExpression Id. */
-  int SEMICOLON = 36;
+  int RIGHT_PAREN = 36;
   /** RegularExpression Id. */
-  int LEFT_PAREN = 37;
+  int COMMA = 37;
   /** RegularExpression Id. */
-  int RIGHT_PAREN = 38;
+  int PERIOD = 38;
   /** RegularExpression Id. */
-  int COMMA = 39;
+  int UNDERSCORE = 39;
   /** RegularExpression Id. */
-  int PERIOD = 40;
+  int SIGN = 40;
   /** RegularExpression Id. */
-  int UNDERSCORE = 41;
+  int DIGIT = 41;
   /** RegularExpression Id. */
-  int SIGN = 42;
+  int ALPHABET = 42;
   /** RegularExpression Id. */
-  int DIGIT = 43;
+  int COMP_OP = 43;
   /** RegularExpression Id. */
-  int ALPHABET = 44;
+  int QUOTE = 44;
   /** RegularExpression Id. */
-  int COMP_OP = 45;
+  int NNNN = 45;
   /** RegularExpression Id. */
-  int QUOTE = 46;
+  int NN = 46;
   /** RegularExpression Id. */
   int NON_QUOTE_CHARACTER = 47;
   /** RegularExpression Id. */
@@ -138,8 +138,6 @@ public interface SimpleDBMSParserConstants {
     "<INT_VALUE>",
     "<DATE_VALUE>",
     "<CHAR_STRING>",
-    "<NNNN>",
-    "<NN>",
     "\";\"",
     "\"(\"",
     "\")\"",
@@ -151,6 +149,8 @@ public interface SimpleDBMSParserConstants {
     "<ALPHABET>",
     "<COMP_OP>",
     "\"`\"",
+    "<NNNN>",
+    "<NN>",
     "<NON_QUOTE_CHARACTER>",
     "<NON_QUOTE_SPECIAL_CHARACTERS>",
     "<UNUSED_QUOTE_MARK>",
