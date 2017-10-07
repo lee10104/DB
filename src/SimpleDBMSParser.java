@@ -62,7 +62,7 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     System.out.print("DB_2013-11422> ");
   }
 
-  static final public void command() throws ParseException {
+// grammar file 그대로 구현  static final public void command() throws ParseException {
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case CREATE_TABLE:
     case DROP_TABLE:
@@ -255,8 +255,8 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
   static final public void tableReferenceList() throws ParseException {
     referedTable();
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
-    case AS:
-      jj_consume_token(AS);
+    case COMMA:
+      jj_consume_token(COMMA);
       tableName();
       break;
     default:
@@ -651,15 +651,14 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     finally { jj_save(4, xla); }
   }
 
-  static private boolean jj_3R_8() {
-    if (jj_3R_9()) return true;
-    if (jj_scan_token(COMP_OP)) return true;
-    if (jj_3R_9()) return true;
+  static private boolean jj_3_2() {
+    if (jj_3R_8()) return true;
     return false;
   }
 
-  static private boolean jj_3_2() {
-    if (jj_3R_8()) return true;
+  static private boolean jj_3_5() {
+    if (jj_scan_token(46)) return true;
+    if (jj_scan_token(PERIOD)) return true;
     return false;
   }
 
@@ -669,9 +668,16 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     return false;
   }
 
-  static private boolean jj_3_5() {
-    if (jj_scan_token(46)) return true;
-    if (jj_scan_token(PERIOD)) return true;
+  static private boolean jj_3R_12() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_scan_token(41)) {
+    jj_scanpos = xsp;
+    if (jj_scan_token(43)) {
+    jj_scanpos = xsp;
+    if (jj_scan_token(42)) return true;
+    }
+    }
     return false;
   }
 
@@ -698,19 +704,6 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     return false;
   }
 
-  static private boolean jj_3R_12() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_scan_token(43)) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(45)) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(44)) return true;
-    }
-    }
-    return false;
-  }
-
   static private boolean jj_3_4() {
     if (jj_scan_token(46)) return true;
     if (jj_scan_token(PERIOD)) return true;
@@ -720,6 +713,13 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
   static private boolean jj_3_1() {
     if (jj_scan_token(AS)) return true;
     if (jj_scan_token(46)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_8() {
+    if (jj_3R_9()) return true;
+    if (jj_scan_token(COMP_OP)) return true;
+    if (jj_3R_9()) return true;
     return false;
   }
 
@@ -743,10 +743,10 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
       jj_la1_init_1();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0xfe20,0xfe00,0xfe00,0x1000000,0x0,0xc0000,0x20000,0x400000,0x2000000,0x4000000,0x8000000,0x80000000,0x0,0x0,0x8000000,0xc0000,0x80000000,0x0,0x10000,0x0,0x1000000,0x0,0x20000000,0x400000,0x0,0x1c0,};
+      jj_la1_0 = new int[] {0xfe20,0xfe00,0xfe00,0x1000000,0x0,0xc0000,0x20000,0x0,0x2000000,0x4000000,0x8000000,0x80000000,0x0,0x0,0x8000000,0xc0000,0x80000000,0x0,0x10000,0x0,0x1000000,0x0,0x20000000,0x400000,0x0,0x1c0,};
    }
    private static void jj_la1_init_1() {
-      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x2,0x4000,0x0,0x0,0x0,0x0,0x0,0x7800,0x4000,0x7800,0x0,0x0,0x0,0x2,0x3800,0x3800,0x0,0x2,0x4000,0x0,0x2,0x0,};
+      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x2,0x4000,0x0,0x2,0x0,0x0,0x0,0x4e00,0x4000,0x4e00,0x0,0x0,0x0,0x2,0xe00,0xe00,0x0,0x2,0x4000,0x0,0x2,0x0,};
    }
   static final private JJCalls[] jj_2_rtns = new JJCalls[5];
   static private boolean jj_rescan = false;
@@ -953,7 +953,7 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
   /** Generate ParseException. */
   static public ParseException generateParseException() {
     jj_expentries.clear();
-    boolean[] la1tokens = new boolean[49];
+    boolean[] la1tokens = new boolean[50];
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
@@ -970,7 +970,7 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
         }
       }
     }
-    for (int i = 0; i < 49; i++) {
+    for (int i = 0; i < 50; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;
