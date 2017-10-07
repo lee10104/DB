@@ -31,33 +31,71 @@ public interface SimpleDBMSParserConstants {
   /** RegularExpression Id. */
   int SHOW_TABLES = 15;
   /** RegularExpression Id. */
-  int NOT_NULL = 16;
+  int NULL = 16;
   /** RegularExpression Id. */
-  int PRIMARY_KEY = 17;
+  int NOT_NULL = 17;
   /** RegularExpression Id. */
-  int FOREIGN_KEY = 18;
+  int PRIMARY_KEY = 18;
   /** RegularExpression Id. */
-  int REFERENCES = 19;
+  int FOREIGN_KEY = 19;
   /** RegularExpression Id. */
-  int SEMICOLON = 20;
+  int REFERENCES = 20;
   /** RegularExpression Id. */
-  int LEFT_PAREN = 21;
+  int VALUES = 21;
   /** RegularExpression Id. */
-  int RIGHT_PAREN = 22;
+  int AS = 22;
   /** RegularExpression Id. */
-  int COMMA = 23;
+  int FROM = 23;
   /** RegularExpression Id. */
-  int UNDERSCORE = 24;
+  int WHERE = 24;
   /** RegularExpression Id. */
-  int INT_VALUE = 25;
+  int OR = 25;
   /** RegularExpression Id. */
-  int SIGN = 26;
+  int AND = 26;
   /** RegularExpression Id. */
-  int DIGIT = 27;
+  int NOT = 27;
   /** RegularExpression Id. */
-  int LEGAL_IDENTIFIER = 28;
+  int IS = 28;
   /** RegularExpression Id. */
-  int ALPHABET = 29;
+  int ALL = 29;
+  /** RegularExpression Id. */
+  int SEMICOLON = 30;
+  /** RegularExpression Id. */
+  int LEFT_PAREN = 31;
+  /** RegularExpression Id. */
+  int RIGHT_PAREN = 32;
+  /** RegularExpression Id. */
+  int COMMA = 33;
+  /** RegularExpression Id. */
+  int PERIOD = 34;
+  /** RegularExpression Id. */
+  int UNDERSCORE = 35;
+  /** RegularExpression Id. */
+  int SIGN = 36;
+  /** RegularExpression Id. */
+  int DIGIT = 37;
+  /** RegularExpression Id. */
+  int ALPHABET = 38;
+  /** RegularExpression Id. */
+  int COMP_OP = 39;
+  /** RegularExpression Id. */
+  int QUOTE = 40;
+  /** RegularExpression Id. */
+  int NNNN = 41;
+  /** RegularExpression Id. */
+  int NN = 42;
+  /** RegularExpression Id. */
+  int INT_VALUE = 43;
+  /** RegularExpression Id. */
+  int DATE_VALUE = 44;
+  /** RegularExpression Id. */
+  int CHAR_STRING = 45;
+  /** RegularExpression Id. */
+  int LEGAL_IDENTIFIER = 46;
+  /** RegularExpression Id. */
+  int NON_QUOTE_CHARACTER = 47;
+  /** RegularExpression Id. */
+  int NON_QUOTE_SPECIAL_CHARACTERS = 48;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -76,24 +114,43 @@ public interface SimpleDBMSParserConstants {
     "\"create table\"",
     "\"drop table\"",
     "\"desc\"",
-    "\"insert\"",
-    "\"delete\"",
+    "\"insert into\"",
+    "\"delete from\"",
     "\"select\"",
     "\"show tables\"",
+    "\"null\"",
     "\"not null\"",
     "\"primary key\"",
     "\"foreign key\"",
     "\"references\"",
+    "\"values\"",
+    "\"as\"",
+    "\"from\"",
+    "\"where\"",
+    "\"or\"",
+    "\"and\"",
+    "\"not\"",
+    "\"is\"",
+    "\"*\"",
     "\";\"",
     "\"(\"",
     "\")\"",
     "\",\"",
+    "\".\"",
     "\"_\"",
-    "<INT_VALUE>",
     "<SIGN>",
     "<DIGIT>",
-    "<LEGAL_IDENTIFIER>",
     "<ALPHABET>",
+    "<COMP_OP>",
+    "\"`\"",
+    "<NNNN>",
+    "<NN>",
+    "<INT_VALUE>",
+    "<DATE_VALUE>",
+    "<CHAR_STRING>",
+    "<LEGAL_IDENTIFIER>",
+    "<NON_QUOTE_CHARACTER>",
+    "<NON_QUOTE_SPECIAL_CHARACTERS>",
   };
 
 }
