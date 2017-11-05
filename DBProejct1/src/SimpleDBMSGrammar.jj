@@ -7,18 +7,13 @@ options
 
 PARSER_BEGIN(SimpleDBMSParser)
 
+import db.*;
+
 public class SimpleDBMSParser
 {
-  public static final int PRINT_SYNTAX_ERROR = 0;
-  public static final int PRINT_CREATE_TABLE = 1;
-  public static final int PRINT_DROP_TABLE = 2;
-  public static final int PRINT_DESC = 3;
-  public static final int PRINT_INSERT = 4;
-  public static final int PRINT_DELETE = 5;
-  public static final int PRINT_SELECT = 6;
-  public static final int PRINT_SHOW_TABLES = 7;
+  private static SimpleDBMS dbms = new SimpleDBMS();
   
-  public static void main(String args[]) throws ParseException
+  public static void main(String args[]) throws ParseException, ErrorException
   {
     SimpleDBMSParser parser = new SimpleDBMSParser(System.in);
     System.out.print("DB_2013-11422> ");
@@ -29,46 +24,18 @@ public class SimpleDBMSParser
       {
         parser.command();
       }
-      catch (Exception e)
+      catch (ParseException e)
       {
-        printMessage(PRINT_SYNTAX_ERROR);
+        PrintMessages p = new PrintMessages(Flags.SYNTAX_ERROR);
+        p.print();
+        SimpleDBMSParser.ReInit(System.in);
+      }
+      catch (ErrorException e)
+      {
+        e.p.print();
         SimpleDBMSParser.ReInit(System.in);
       }
     }
-  }
-
-  public static void printMessage(int q)
-  {
-    switch(q)
-    {
-      case PRINT_SYNTAX_ERROR:
-      	System.out.println("Syntax error");
-      	break;
-      case PRINT_CREATE_TABLE:
-      	System.out.println("\'CREATE TABLE\' requested");
-      	break;
-      case PRINT_DROP_TABLE:
-      	System.out.println("\'DROP TABLE\' requested");
-      	break;
-      case PRINT_DESC:
-      	System.out.println("\'DESC\' requested");
-      	break;
-      case PRINT_INSERT:
-      	System.out.println("\'INSERT\' requested");
-      	break;
-      case PRINT_DELETE:
-      	System.out.println("\'DELETE\' requested");
-      	break;
-      case PRINT_SELECT:
-      	System.out.println("\'SELECT\' requested");
-      	break;
-      case PRINT_SHOW_TABLES:
-      	System.out.println("\'SHOW TABLES\' requested");
-      	break;
-      default:
-        break;
-    }
-    System.out.print("DB_2013-11422> ");
   }
 }
 
@@ -76,7 +43,7 @@ PARSER_END(SimpleDBMSParser)
 
 SKIP : { " " | "\r" | "\t" | "\n" }
 
-// grammar fileÀÇ »¡°£ ±Û¾¾·Î µÈ keywordµé
+// grammar fileì˜ ë¹¨ê°„ ê¸€ì”¨ë¡œ ëœ keywordë“¤
 TOKEN : /* Keywords */
 {
   < EXIT : "exit" >
@@ -103,10 +70,10 @@ TOKEN : /* Keywords */
 | < AND : "and" >
 | < NOT : "not" >
 | < IS : "is" >
-| < ALL : "*" > // '*'°¡ ¶óº§·Î ÀÛ¿ëÇÒ ¼ö ¾øÀ¸¹Ç·Î ÀÓÀÇ·Î 'ALL'À» ºÙÀÓ
+| < ALL : "*" > // '*'ê°€ ë¼ë²¨ë¡œ ì‘ìš©í•  ìˆ˜ ì—†ìœ¼ë¯€ë¡œ ì„ì˜ë¡œ 'ALL'ì„ ë¶™ì„
 }
 
-// ±× ¿Ü
+// ê·¸ ì™¸
 TOKEN :
 {
   < LEGAL_IDENTIFIER : < ALPHABET > (< ALPHABET > | < UNDERSCORE >)* >
@@ -129,10 +96,10 @@ TOKEN :
 | < NON_QUOTE_CHARACTER : < DIGIT > | < ALPHABET > | < NON_QUOTE_SPECIAL_CHARACTERS > >
 | < NON_QUOTE_SPECIAL_CHARACTERS : [ "~", "`", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=",
 "|", "{", "[", "]", "}", "\\", ";", ":", ",", "<", ".", ">", "?", "/"] >
-| < UNUSED_QUOTE_MARK : "\'" | "\"" > // µû¿ÈÇ¥ ½Ç¼ö·Î µé¾î°¬À» ¶§ syntax error ¹ñµµ·Ï token¿¡ Ãß°¡
+| < UNUSED_QUOTE_MARK : "\'" | "\"" > // ë”°ì˜´í‘œ ì‹¤ìˆ˜ë¡œ ë“¤ì–´ê°”ì„ ë•Œ syntax error ë±‰ë„ë¡ tokenì— ì¶”ê°€
 }
 
-// grammar file ±×´ë·Î ±¸Çö
+// grammar file ê·¸ëŒ€ë¡œ êµ¬í˜„
 void command() : {}
 {
   queryList()
@@ -140,85 +107,133 @@ void command() : {}
     < EXIT >
     < SEMICOLON >
     {
+      dbms.close();
       System.exit(0);
     }
   ) 
 }
 
-void queryList() : { int q; }
+void queryList() : { PrintMessages p; }
 {
   (
-    q = query()
+    p = query()
     < SEMICOLON >
     {
-      printMessage(q);
+      p.print();
     }
   )+
 }
 
-int query() : { int q; }
+PrintMessages query() : { PrintMessages p; }
 {
   (
-    createTableQuery() { q = PRINT_CREATE_TABLE; }
-  | dropTableQuery() { q = PRINT_DROP_TABLE; }
-  | descQuery() { q = PRINT_DESC; }
-  | insertQuery() { q = PRINT_INSERT; }
-  | deleteQuery() { q = PRINT_DELETE; }
-  | selectQuery() { q = PRINT_SELECT; }
-  | showTablesQuery() { q = PRINT_SHOW_TABLES; }
+    p = createTableQuery() { return p; }
+  | p = dropTableQuery() { return p; }
+  | p = descQuery() { return p; }
+  | p = insertQuery() { return p; }
+  | p = deleteQuery() { return p; }
+  | p = selectQuery() { return p; }
+  | p = showTablesQuery() { return p; }
   )
   (
     {
-      return q;
+      return p;
     }
   )
 }
 
-void createTableQuery() : {}
+PrintMessages createTableQuery() : { String tn; Table t; }
 {
   < CREATE_TABLE >
-  tableName()
+  tn = tableName()
+  {
+    if (dbms.isExistingTable(tn)) {
+      throw new ErrorException(Flags.TABLE_EXISTENCE_ERROR);
+    } else {
+      t = dbms.createTable(tn);
+    }
+  }
   tableElementList()
+  {
+    return new PrintMessages(Flags.CREATE_TABLE_DONE, tn);
+  }
 }
 
-void dropTableQuery() : {}
+PrintMessages dropTableQuery() : { String tn; boolean isDeleted; }
 {
   < DROP_TABLE >
-  tableName()
+  tn = tableName()
+  {
+    if (!dbms.isExistingTable(tn)) {
+      throw new ErrorException(Flags.NO_SUCH_TABLE);
+    }
+
+    isDeleted = dbms.dropTable(tn);
+
+    if (!isDeleted) {
+      throw new ErrorException(Flags.DROP_REFERENCED_TABLE_ERROR, tn);
+    }
+
+    return new PrintMessages(Flags.DROP_TABLE_DONE);
+  }
 }
 
-void descQuery() : {}
+PrintMessages descQuery() : { String tn; }
 {
   < DESC >
-  tableName()
+  tn = tableName()
+  {
+    if (!dbms.isExistingTable(tn)) {
+      throw new ErrorException(Flags.NO_SUCH_TABLE);
+    }
+    dbms.printTable(tn);
+
+    return new PrintMessages(Flags.DESC_DONE);
+  }
 }
 
-void insertQuery() : {}
+PrintMessages insertQuery() : { String tn; }
 {
   < INSERT >
-  tableName()
+  tn = tableName()
   insertColumnsAndSource()
+
+  {
+    return new PrintMessages(Flags.NOTHING);
+  }
 }
 
-void deleteQuery() : {}
+PrintMessages deleteQuery() : { String tn; }
 {
   < DELETE >
-  tableName()
+  tn = tableName()
   (
     whereClause()
   )?
+  
+  {
+    return new PrintMessages(Flags.NOTHING);
+  }
 }
 
-void selectQuery() : {}
+PrintMessages selectQuery() : {}
 {
   < SELECT >
   selectList()
   tableExpression()
+
+  {
+    return new PrintMessages(Flags.NOTHING);
+  }
 }
 
-void showTablesQuery() : {}
+PrintMessages showTablesQuery() : {}
 {
   < SHOW_TABLES >
+  {
+    dbms.showTables();
+    return new PrintMessages(Flags.SHOW_TABLES_DONE);
+  }
 }
 
 void tableElementList() : {}
@@ -232,19 +247,23 @@ void tableElementList() : {}
   < RIGHT_PAREN >
 }
 
-void tableElement() : {}
+void tableElement() : { Column c; }
 {
-  columnDefinition()
+  c = columnDefinition()
 | tableConstraintDefinition()
 }
 
-void columnDefinition() : {}
+Column columnDefinition() : { String cn; DataType dt; boolean isNull = false; boolean isPrivateKey = false; }
 {
-  columnName()
-  dataType()
+  cn = columnName()
+  dt = dataType()
   (
     < NOT_NULL >
+    { isNull = true; }
   )?
+  {
+    return new Column(cn, dt, isNull, isPrivateKey);
+  }
 }
 
 void whereClause() : {}
@@ -272,7 +291,7 @@ void referedTable() : {}
 {
   tableName()
   (
-    LOOKAHEAD(4) // choice conflict ¹ß»ı, LOOKAHEAD »ç¿ë
+    LOOKAHEAD(4) // choice conflict ë°œìƒ, LOOKAHEAD ì‚¬ìš©
     < AS >
     tableName()
   )?
@@ -312,7 +331,7 @@ void booleanTest() : {}
 
 void predicate() : {}
 {
-  LOOKAHEAD(4) // choice conflict ¹ß»ı, LOOKAHEAD »ç¿ë
+  LOOKAHEAD(4) // choice conflict ë°œìƒ, LOOKAHEAD ì‚¬ìš©
   comparisonPredicate()
 | nullPredicate()
 }
@@ -328,7 +347,7 @@ void compOperand() : {}
 {
   comparableValue()
 | (
-    LOOKAHEAD(4) // choice conflict ¹ß»ı, LOOKAHEAD »ç¿ë
+    LOOKAHEAD(4) // choice conflict ë°œìƒ, LOOKAHEAD ì‚¬ìš©
     tableName()
     < PERIOD >
   )?
@@ -345,7 +364,7 @@ void parenthesizedBooleanExpression() : {}
 void nullPredicate() : {}
 {
   (
-    LOOKAHEAD(4) // choice conflict ¹ß»ı, LOOKAHEAD »ç¿ë
+    LOOKAHEAD(4) // choice conflict ë°œìƒ, LOOKAHEAD ì‚¬ìš©
     tableName()
     < PERIOD >
   )?
@@ -422,7 +441,7 @@ void selectList() : {}
 void selectedColumn() : {}
 {
   (
-    LOOKAHEAD(4) // choice conflict ¹ß»ı, LOOKAHEAD »ç¿ë
+    LOOKAHEAD(4) // choice conflict ë°œìƒ, LOOKAHEAD ì‚¬ìš©
     tableName()
     < PERIOD >
   )?
@@ -459,24 +478,48 @@ void columnNameList() : {}
   < RIGHT_PAREN >
 }
 
-void dataType() : {}
+DataType dataType() : { int dt; int cl = 0; }
 {
   < INT >
+  {
+    dt = Flags.INT;
+  }
 | (
     < CHAR >
+    {
+      dt = Flags.CHAR;
+    }
     < LEFT_PAREN >
     < INT_VALUE >
+    {
+      cl = Integer.parseInt(token.image);
+    }
     < RIGHT_PAREN >
   )
 | < DATE >
+  {
+    dt = Flags.DATE;
+  }
+  {
+    if (dt == Flags.CHAR && cl <= 0) {
+      throw new ErrorException(Flags.CHAR_LENGTH_ERROR);
+    }
+    return new DataType(dt, cl);
+  }
 }
 
-void tableName() : {}
+String tableName() : {}
 {
   < LEGAL_IDENTIFIER >
+  {
+    return token.image.toLowerCase();
+  }
 }
 
-void columnName() : {}
+String columnName() : {}
 {
   < LEGAL_IDENTIFIER >
+  {
+    return token.image.toLowerCase();
+  }
 }
