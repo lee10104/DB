@@ -1,1 +1,482 @@
-options{  static = true;  DEBUG_PARSER = false;  IGNORE_CASE = true;}PARSER_BEGIN(SimpleDBMSParser)public class SimpleDBMSParser{  public static final int PRINT_SYNTAX_ERROR = 0;  public static final int PRINT_CREATE_TABLE = 1;  public static final int PRINT_DROP_TABLE = 2;  public static final int PRINT_DESC = 3;  public static final int PRINT_INSERT = 4;  public static final int PRINT_DELETE = 5;  public static final int PRINT_SELECT = 6;  public static final int PRINT_SHOW_TABLES = 7;    public static void main(String args[]) throws ParseException  {    SimpleDBMSParser parser = new SimpleDBMSParser(System.in);    System.out.print("DB_2013-11422> ");    while (true)    {      try      {        parser.command();      }      catch (Exception e)      {        printMessage(PRINT_SYNTAX_ERROR);        SimpleDBMSParser.ReInit(System.in);      }    }  }  public static void printMessage(int q)  {    switch(q)    {      case PRINT_SYNTAX_ERROR:      	System.out.println("Syntax error");      	break;      case PRINT_CREATE_TABLE:      	System.out.println("\'CREATE TABLE\' requested");      	break;      case PRINT_DROP_TABLE:      	System.out.println("\'DROP TABLE\' requested");      	break;      case PRINT_DESC:      	System.out.println("\'DESC\' requested");      	break;      case PRINT_INSERT:      	System.out.println("\'INSERT\' requested");      	break;      case PRINT_DELETE:      	System.out.println("\'DELETE\' requested");      	break;      case PRINT_SELECT:      	System.out.println("\'SELECT\' requested");      	break;      case PRINT_SHOW_TABLES:      	System.out.println("\'SHOW TABLES\' requested");      	break;      default:        break;    }    System.out.print("DB_2013-11422> ");  }}PARSER_END(SimpleDBMSParser)SKIP : { " " | "\r" | "\t" | "\n" }// grammar file의 빨간 글씨로 된 keyword들TOKEN : /* Keywords */{  < EXIT : "exit" >| < INT : "int" >| < CHAR : "char" >| < DATE : "date" >| < CREATE_TABLE : "create table" >| < DROP_TABLE : "drop table" >| < DESC : "desc" >| < INSERT : "insert into" >| < DELETE : "delete from" >| < SELECT : "select" >| < SHOW_TABLES : "show tables" >| < NULL : "null" >| < NOT_NULL : "not null" >| < PRIMARY_KEY : "primary key" >| < FOREIGN_KEY : "foreign key" >| < REFERENCES : "references" >| < VALUES : "values" >| < AS : "as" >| < FROM : "from" >| < WHERE : "where" >| < OR : "or" >| < AND : "and" >| < NOT : "not" >| < IS : "is" >| < ALL : "*" > // '*'가 라벨로 작용할 수 없으므로 임의로 'ALL'을 붙임}// 그 외TOKEN :{  < LEGAL_IDENTIFIER : < ALPHABET > (< ALPHABET > | < UNDERSCORE >)* >| < INT_VALUE : (< SIGN >)? (< DIGIT >)+ >| < DATE_VALUE : < NNNN > "-" < NN > "-" < NN > >| < CHAR_STRING : < QUOTE > (< NON_QUOTE_CHARACTER >)* < QUOTE > >| < SEMICOLON : ";" >| < LEFT_PAREN : "(" >| < RIGHT_PAREN : ")" >| < COMMA : "," >| < PERIOD : "." >| < UNDERSCORE : "_" >| < SIGN : "+" | "-" >| < DIGIT : [ "0"-"9" ] >| < ALPHABET : [ "a"-"z", "A"-"Z" ] >| < COMP_OP : ">" | "<" | "=" | ">=" | "<=" | "!=" >| < QUOTE : "`" >| < NNNN : (< DIGIT >){4} >| < NN : (< DIGIT >){2} >| < NON_QUOTE_CHARACTER : < DIGIT > | < ALPHABET > | < NON_QUOTE_SPECIAL_CHARACTERS > >| < NON_QUOTE_SPECIAL_CHARACTERS : [ "~", "`", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=","|", "{", "[", "]", "}", "\\", ";", ":", ",", "<", ".", ">", "?", "/"] >| < UNUSED_QUOTE_MARK : "\'" | "\"" > // 따옴표 실수로 들어갔을 때 syntax error 뱉도록 token에 추가}// grammar file 그대로 구현void command() : {}{  queryList()| (    < EXIT >    < SEMICOLON >    {      System.exit(0);    }  ) }void queryList() : { int q; }{  (    q = query()    < SEMICOLON >    {      printMessage(q);    }  )+}int query() : { int q; }{  (    createTableQuery() { q = PRINT_CREATE_TABLE; }  | dropTableQuery() { q = PRINT_DROP_TABLE; }  | descQuery() { q = PRINT_DESC; }  | insertQuery() { q = PRINT_INSERT; }  | deleteQuery() { q = PRINT_DELETE; }  | selectQuery() { q = PRINT_SELECT; }  | showTablesQuery() { q = PRINT_SHOW_TABLES; }  )  (    {      return q;    }  )}void createTableQuery() : {}{  < CREATE_TABLE >  tableName()  tableElementList()}void dropTableQuery() : {}{  < DROP_TABLE >  tableName()}void descQuery() : {}{  < DESC >  tableName()}void insertQuery() : {}{  < INSERT >  tableName()  insertColumnsAndSource()}void deleteQuery() : {}{  < DELETE >  tableName()  (    whereClause()  )?}void selectQuery() : {}{  < SELECT >  selectList()  tableExpression()}void showTablesQuery() : {}{  < SHOW_TABLES >}void tableElementList() : {}{  < LEFT_PAREN >  tableElement()  (    < COMMA >    tableElement()  )*  < RIGHT_PAREN >}void tableElement() : {}{  columnDefinition()| tableConstraintDefinition()}void columnDefinition() : {}{  columnName()  dataType()  (    < NOT_NULL >  )?}void whereClause() : {}{  < WHERE >  booleanValueExpression()}void fromClause() : {}{  < FROM >  tableReferenceList()}void tableReferenceList() : {}{  referedTable()  (    < COMMA >    referedTable()  )?}void referedTable() : {}{  tableName()  (    LOOKAHEAD(4) // choice conflict 발생, LOOKAHEAD 사용    < AS >    tableName()  )?}void booleanValueExpression() : {}{  booleanTerm()  (    < OR >    booleanTerm()  )*}void booleanTerm() : {}{  booleanFactor()  (    < AND >    booleanFactor()  )*}void booleanFactor() : {}{  (    < NOT >  )?  booleanTest()}void booleanTest() : {}{  predicate()| parenthesizedBooleanExpression()}void predicate() : {}{  LOOKAHEAD(4) // choice conflict 발생, LOOKAHEAD 사용  comparisonPredicate()| nullPredicate()}void comparisonPredicate() : {}{  compOperand()  < COMP_OP >  compOperand()}void compOperand() : {}{  comparableValue()| (    LOOKAHEAD(4) // choice conflict 발생, LOOKAHEAD 사용    tableName()    < PERIOD >  )?  columnName()}void parenthesizedBooleanExpression() : {}{  < LEFT_PAREN >  booleanValueExpression()  < RIGHT_PAREN >}void nullPredicate() : {}{  (    LOOKAHEAD(4) // choice conflict 발생, LOOKAHEAD 사용    tableName()    < PERIOD >  )?  columnName()  nullOperation()}void nullOperation(): {}{  < IS >  (    < NOT >  )?  < NULL >}void tableConstraintDefinition() : {}{  primaryKeyConstraint()| referentialConstraint()}void insertColumnsAndSource() : {}{  (    columnNameList()  )?  valueList()}void valueList() : {}{  < VALUES >  < LEFT_PAREN >  value()  (    < COMMA >    value()  )*  < RIGHT_PAREN >}void value() : {}{  < NULL >| comparableValue()}void comparableValue() : {}{  < INT_VALUE >| < CHAR_STRING >| < DATE_VALUE >}void tableExpression() : {}{  fromClause()  (    whereClause()  )?}void selectList() : {}{  < ALL >| selectedColumn()  (    < COMMA >    selectedColumn()  )*}void selectedColumn() : {}{  (    LOOKAHEAD(4) // choice conflict 발생, LOOKAHEAD 사용    tableName()    < PERIOD >  )?  columnName()  (    < AS >    columnName()  )?}void primaryKeyConstraint() : {}{  < PRIMARY_KEY >  columnNameList()}void referentialConstraint() : {}{  < FOREIGN_KEY >  columnNameList()  < REFERENCES >  tableName()  columnNameList()}void columnNameList() : {}{  < LEFT_PAREN >  columnName()  (    < COMMA >    columnName()  )*  < RIGHT_PAREN >}void dataType() : {}{  < INT >| (    < CHAR >    < LEFT_PAREN >    < INT_VALUE >    < RIGHT_PAREN >  )| < DATE >}void tableName() : {}{  < LEGAL_IDENTIFIER >}void columnName() : {}{  < LEGAL_IDENTIFIER >}
+options
+{
+  static = true;
+  DEBUG_PARSER = false;
+  IGNORE_CASE = true;
+}
+
+PARSER_BEGIN(SimpleDBMSParser)
+
+public class SimpleDBMSParser
+{
+  public static final int PRINT_SYNTAX_ERROR = 0;
+  public static final int PRINT_CREATE_TABLE = 1;
+  public static final int PRINT_DROP_TABLE = 2;
+  public static final int PRINT_DESC = 3;
+  public static final int PRINT_INSERT = 4;
+  public static final int PRINT_DELETE = 5;
+  public static final int PRINT_SELECT = 6;
+  public static final int PRINT_SHOW_TABLES = 7;
+  
+  public static void main(String args[]) throws ParseException
+  {
+    SimpleDBMSParser parser = new SimpleDBMSParser(System.in);
+    System.out.print("DB_2013-11422> ");
+
+    while (true)
+    {
+      try
+      {
+        parser.command();
+      }
+      catch (Exception e)
+      {
+        printMessage(PRINT_SYNTAX_ERROR);
+        SimpleDBMSParser.ReInit(System.in);
+      }
+    }
+  }
+
+  public static void printMessage(int q)
+  {
+    switch(q)
+    {
+      case PRINT_SYNTAX_ERROR:
+      	System.out.println("Syntax error");
+      	break;
+      case PRINT_CREATE_TABLE:
+      	System.out.println("\'CREATE TABLE\' requested");
+      	break;
+      case PRINT_DROP_TABLE:
+      	System.out.println("\'DROP TABLE\' requested");
+      	break;
+      case PRINT_DESC:
+      	System.out.println("\'DESC\' requested");
+      	break;
+      case PRINT_INSERT:
+      	System.out.println("\'INSERT\' requested");
+      	break;
+      case PRINT_DELETE:
+      	System.out.println("\'DELETE\' requested");
+      	break;
+      case PRINT_SELECT:
+      	System.out.println("\'SELECT\' requested");
+      	break;
+      case PRINT_SHOW_TABLES:
+      	System.out.println("\'SHOW TABLES\' requested");
+      	break;
+      default:
+        break;
+    }
+    System.out.print("DB_2013-11422> ");
+  }
+}
+
+PARSER_END(SimpleDBMSParser)
+
+SKIP : { " " | "\r" | "\t" | "\n" }
+
+// grammar file의 빨간 글씨로 된 keyword들
+TOKEN : /* Keywords */
+{
+  < EXIT : "exit" >
+| < INT : "int" >
+| < CHAR : "char" >
+| < DATE : "date" >
+| < CREATE_TABLE : "create table" >
+| < DROP_TABLE : "drop table" >
+| < DESC : "desc" >
+| < INSERT : "insert into" >
+| < DELETE : "delete from" >
+| < SELECT : "select" >
+| < SHOW_TABLES : "show tables" >
+| < NULL : "null" >
+| < NOT_NULL : "not null" >
+| < PRIMARY_KEY : "primary key" >
+| < FOREIGN_KEY : "foreign key" >
+| < REFERENCES : "references" >
+| < VALUES : "values" >
+| < AS : "as" >
+| < FROM : "from" >
+| < WHERE : "where" >
+| < OR : "or" >
+| < AND : "and" >
+| < NOT : "not" >
+| < IS : "is" >
+| < ALL : "*" > // '*'가 라벨로 작용할 수 없으므로 임의로 'ALL'을 붙임
+}
+
+// 그 외
+TOKEN :
+{
+  < LEGAL_IDENTIFIER : < ALPHABET > (< ALPHABET > | < UNDERSCORE >)* >
+| < INT_VALUE : (< SIGN >)? (< DIGIT >)+ >
+| < DATE_VALUE : < NNNN > "-" < NN > "-" < NN > >
+| < CHAR_STRING : < QUOTE > (< NON_QUOTE_CHARACTER >)* < QUOTE > >
+| < SEMICOLON : ";" >
+| < LEFT_PAREN : "(" >
+| < RIGHT_PAREN : ")" >
+| < COMMA : "," >
+| < PERIOD : "." >
+| < UNDERSCORE : "_" >
+| < SIGN : "+" | "-" >
+| < DIGIT : [ "0"-"9" ] >
+| < ALPHABET : [ "a"-"z", "A"-"Z" ] >
+| < COMP_OP : ">" | "<" | "=" | ">=" | "<=" | "!=" >
+| < QUOTE : "`" >
+| < NNNN : (< DIGIT >){4} >
+| < NN : (< DIGIT >){2} >
+| < NON_QUOTE_CHARACTER : < DIGIT > | < ALPHABET > | < NON_QUOTE_SPECIAL_CHARACTERS > >
+| < NON_QUOTE_SPECIAL_CHARACTERS : [ "~", "`", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "+", "=",
+"|", "{", "[", "]", "}", "\\", ";", ":", ",", "<", ".", ">", "?", "/"] >
+| < UNUSED_QUOTE_MARK : "\'" | "\"" > // 따옴표 실수로 들어갔을 때 syntax error 뱉도록 token에 추가
+}
+
+// grammar file 그대로 구현
+void command() : {}
+{
+  queryList()
+| (
+    < EXIT >
+    < SEMICOLON >
+    {
+      System.exit(0);
+    }
+  ) 
+}
+
+void queryList() : { int q; }
+{
+  (
+    q = query()
+    < SEMICOLON >
+    {
+      printMessage(q);
+    }
+  )+
+}
+
+int query() : { int q; }
+{
+  (
+    createTableQuery() { q = PRINT_CREATE_TABLE; }
+  | dropTableQuery() { q = PRINT_DROP_TABLE; }
+  | descQuery() { q = PRINT_DESC; }
+  | insertQuery() { q = PRINT_INSERT; }
+  | deleteQuery() { q = PRINT_DELETE; }
+  | selectQuery() { q = PRINT_SELECT; }
+  | showTablesQuery() { q = PRINT_SHOW_TABLES; }
+  )
+  (
+    {
+      return q;
+    }
+  )
+}
+
+void createTableQuery() : {}
+{
+  < CREATE_TABLE >
+  tableName()
+  tableElementList()
+}
+
+void dropTableQuery() : {}
+{
+  < DROP_TABLE >
+  tableName()
+}
+
+void descQuery() : {}
+{
+  < DESC >
+  tableName()
+}
+
+void insertQuery() : {}
+{
+  < INSERT >
+  tableName()
+  insertColumnsAndSource()
+}
+
+void deleteQuery() : {}
+{
+  < DELETE >
+  tableName()
+  (
+    whereClause()
+  )?
+}
+
+void selectQuery() : {}
+{
+  < SELECT >
+  selectList()
+  tableExpression()
+}
+
+void showTablesQuery() : {}
+{
+  < SHOW_TABLES >
+}
+
+void tableElementList() : {}
+{
+  < LEFT_PAREN >
+  tableElement()
+  (
+    < COMMA >
+    tableElement()
+  )*
+  < RIGHT_PAREN >
+}
+
+void tableElement() : {}
+{
+  columnDefinition()
+| tableConstraintDefinition()
+}
+
+void columnDefinition() : {}
+{
+  columnName()
+  dataType()
+  (
+    < NOT_NULL >
+  )?
+}
+
+void whereClause() : {}
+{
+  < WHERE >
+  booleanValueExpression()
+}
+
+void fromClause() : {}
+{
+  < FROM >
+  tableReferenceList()
+}
+
+void tableReferenceList() : {}
+{
+  referedTable()
+  (
+    < COMMA >
+    referedTable()
+  )?
+}
+
+void referedTable() : {}
+{
+  tableName()
+  (
+    LOOKAHEAD(4) // choice conflict 발생, LOOKAHEAD 사용
+    < AS >
+    tableName()
+  )?
+}
+
+void booleanValueExpression() : {}
+{
+  booleanTerm()
+  (
+    < OR >
+    booleanTerm()
+  )*
+}
+
+void booleanTerm() : {}
+{
+  booleanFactor()
+  (
+    < AND >
+    booleanFactor()
+  )*
+}
+
+void booleanFactor() : {}
+{
+  (
+    < NOT >
+  )?
+  booleanTest()
+}
+
+void booleanTest() : {}
+{
+  predicate()
+| parenthesizedBooleanExpression()
+}
+
+void predicate() : {}
+{
+  LOOKAHEAD(4) // choice conflict 발생, LOOKAHEAD 사용
+  comparisonPredicate()
+| nullPredicate()
+}
+
+void comparisonPredicate() : {}
+{
+  compOperand()
+  < COMP_OP >
+  compOperand()
+}
+
+void compOperand() : {}
+{
+  comparableValue()
+| (
+    LOOKAHEAD(4) // choice conflict 발생, LOOKAHEAD 사용
+    tableName()
+    < PERIOD >
+  )?
+  columnName()
+}
+
+void parenthesizedBooleanExpression() : {}
+{
+  < LEFT_PAREN >
+  booleanValueExpression()
+  < RIGHT_PAREN >
+}
+
+void nullPredicate() : {}
+{
+  (
+    LOOKAHEAD(4) // choice conflict 발생, LOOKAHEAD 사용
+    tableName()
+    < PERIOD >
+  )?
+  columnName()
+  nullOperation()
+}
+
+void nullOperation(): {}
+{
+  < IS >
+  (
+    < NOT >
+  )?
+  < NULL >
+}
+
+void tableConstraintDefinition() : {}
+{
+  primaryKeyConstraint()
+| referentialConstraint()
+}
+
+void insertColumnsAndSource() : {}
+{
+  (
+    columnNameList()
+  )?
+  valueList()
+}
+
+void valueList() : {}
+{
+  < VALUES >
+  < LEFT_PAREN >
+  value()
+  (
+    < COMMA >
+    value()
+  )*
+  < RIGHT_PAREN >
+}
+
+void value() : {}
+{
+  < NULL >
+| comparableValue()
+}
+
+void comparableValue() : {}
+{
+  < INT_VALUE >
+| < CHAR_STRING >
+| < DATE_VALUE >
+}
+
+void tableExpression() : {}
+{
+  fromClause()
+  (
+    whereClause()
+  )?
+}
+
+void selectList() : {}
+{
+  < ALL >
+| selectedColumn()
+  (
+    < COMMA >
+    selectedColumn()
+  )*
+}
+
+void selectedColumn() : {}
+{
+  (
+    LOOKAHEAD(4) // choice conflict 발생, LOOKAHEAD 사용
+    tableName()
+    < PERIOD >
+  )?
+  columnName()
+  (
+    < AS >
+    columnName()
+  )?
+}
+
+void primaryKeyConstraint() : {}
+{
+  < PRIMARY_KEY >
+  columnNameList()
+}
+
+void referentialConstraint() : {}
+{
+  < FOREIGN_KEY >
+  columnNameList()
+  < REFERENCES >
+  tableName()
+  columnNameList()
+}
+
+void columnNameList() : {}
+{
+  < LEFT_PAREN >
+  columnName()
+  (
+    < COMMA >
+    columnName()
+  )*
+  < RIGHT_PAREN >
+}
+
+void dataType() : {}
+{
+  < INT >
+| (
+    < CHAR >
+    < LEFT_PAREN >
+    < INT_VALUE >
+    < RIGHT_PAREN >
+  )
+| < DATE >
+}
+
+void tableName() : {}
+{
+  < LEGAL_IDENTIFIER >
+}
+
+void columnName() : {}
+{
+  < LEGAL_IDENTIFIER >
+}
