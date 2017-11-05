@@ -188,4 +188,21 @@ public class SimpleDBMS {
         }
         PrintMessages.printLine();
     }
+    
+    public String compareColumnLists(ArrayList<String> columnList1, ArrayList<Column> columnList2) {
+        String columnName = null;
+        for (String c1: columnList1) {
+            boolean flag = true;
+            for (Column c2: columnList2) {
+                if (c1.equals(c2.getName())) {
+                    flag = false;
+                    break;
+                }
+            }
+            if (flag) {
+                columnName = c1;
+            }
+        }
+        return columnName;
+    }
 }

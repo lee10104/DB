@@ -6,19 +6,45 @@ public class Column implements Serializable{
     private String columnName;
     private DataType dataType;
     private boolean isNull;
-    private boolean isPrivateKey;
+    private boolean isPrimaryKey;
+    private boolean isForeignKey;
     
-    public Column(String columnName, DataType dataType, boolean isNull, boolean isPrivateKey) {
+    public Column(String columnName, DataType dataType, boolean isNull) {
         this.columnName = columnName;
         this.dataType = dataType;
         this.isNull = isNull;
-        this.isPrivateKey = isPrivateKey;
+        this.isPrimaryKey = false;
+        this.isForeignKey = false;
+    }
+    
+    public String getName() {
+        return columnName;
+    }
+    
+    public DataType getDataType() {
+        return dataType;
+    }
+    
+    public void setIsPrimaryKey(boolean isPrimaryKey) {
+        this.isPrimaryKey = isPrimaryKey;
+    }
+    
+    public boolean getIsPrimaryKey() {
+        return isPrimaryKey;
+    }
+    
+    public void setIsForeignKey(boolean isForeignKey) {
+        this.isForeignKey = isForeignKey;
+    }
+    
+    public boolean getIsForeignKey() {
+        return isForeignKey;
     }
     
     @Override
     public String toString() {
         String isNullStr;
-        String isPrivateKeyStr;
+        String keyStr;
         
         if (isNull) {
             isNullStr = "Y";
@@ -26,12 +52,16 @@ public class Column implements Serializable{
             isNullStr = "N";
         }
         
-        if (isPrivateKey) {
-            isPrivateKeyStr = "PRI";
+        if (isPrimaryKey && isForeignKey) {
+            keyStr = "PRI/FOR";
+        } else if (isPrimaryKey) {
+            keyStr = "PRI";
+        } else if (isForeignKey) {
+            keyStr = "FOR";
         } else {
-            isPrivateKeyStr = "";
+            keyStr = "";
         }
         
-        return columnName + "\t" + dataType + "\t" + isNullStr + "\t" + isPrivateKeyStr;
+        return columnName + "\t" + dataType + "\t" + isNullStr + "\t" + keyStr;
     }
 }
