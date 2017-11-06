@@ -8,6 +8,7 @@ public class Table {
 
     public Table(String tableName) {
         this.tableName = tableName;
+        columns = new ArrayList<Column>();
     }
     
     public String getName() {

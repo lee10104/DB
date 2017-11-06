@@ -40,6 +40,39 @@ public class PrintMessages {
 	            break;
 	        case Flags.SHOW_TABLES_DONE:
 		    	break;
+	        case Flags.DUPLICATE_COLUMN_DEF_ERROR:
+	            System.out.println("Create table has failed: column definition is duplicated");
+	            break;
+	        case Flags.DUPLICATE_PRIMARY_KEY_DEF_ERROR:
+	            System.out.println("Create table has failed: primary key definition is duplicated");
+	            break;
+	        case Flags.REFERENCE_TYPE_ERROR:
+	            System.out.println("Create table has failed: foreign key references wrong type");
+	            break;
+	        case Flags.REFERENCE_NON_PRIMARY_KEY_ERROR:
+	            System.out.println("Create table has failed: foreign key references non primary key column");
+	            break;
+	        case Flags.REFERENCE_COLUMN_EXISTENCE_ERROR:
+	            System.out.println("Create table has failed: foreign key references non existing column");
+	            break;
+	        case Flags.REFERENCE_TABLE_EXISTENCE_ERROR:
+	            System.out.println("Create table has failed: foreign key references non existing table");
+	            break;
+	        case Flags.NON_EXISTING_COLUMN_DEF_ERROR:
+	            System.out.println("Create table has failed: \'" + str + "\' does not exists in column definition");
+	            break;
+	        case Flags.TABLE_EXISTENCE_ERROR:
+	            System.out.println("Create table has failed: table with the same name already exists");
+	            break;
+	        case Flags.DROP_REFERENCED_TABLE_ERROR:
+	            System.out.println("Drop table has failed: \'" + str + "\' is referenced by other table");
+	            break;
+	        case Flags.SHOW_TABLES_NO_TABLE:
+	            System.out.println("No such table");
+	            break;
+	        case Flags.CHAR_LENGTH_ERROR:
+	            System.out.println("Char length should be over 0");
+	            break;
 	        default:
 	            break;
 	    }

@@ -14,12 +14,14 @@ public class SimpleDBMS {
     // Environment & Database 정의
     Environment simpleDbEnv = null;
     Database simpleDb = null;
+    Database dummyDb = null;
     ArrayList<Table> tableList;
 
     public SimpleDBMS() {
         // db env 열기
         EnvironmentConfig envConfig = new EnvironmentConfig();
         envConfig.setAllowCreate(true);
+        new File("db/").mkdir();
         simpleDbEnv = new Environment(new File("db/"), envConfig);
 
         // db 열기
@@ -27,14 +29,18 @@ public class SimpleDBMS {
         dbConfig.setAllowCreate(true);
         dbConfig.setSortedDuplicates(true);
         simpleDb = simpleDbEnv.openDatabase(null, "db", dbConfig);
+        dbConfig.setSortedDuplicates(false);
+        dummyDb = simpleDbEnv.openDatabase(null, "dummydb", dbConfig);
         
         // tableList 가져오기
-        tableList = getAllTables();
+        // tableList = getAllTables();
     }
 
     public void close() {
         if (simpleDb != null)
             simpleDb.close();
+        if (dummyDb != null)
+            dummyDb.close();
         if (simpleDbEnv != null)
             simpleDbEnv.close();
     }
@@ -72,6 +78,7 @@ public class SimpleDBMS {
             DatabaseEntry key = new DatabaseEntry(T.getBytes("UTF-8"));
             DatabaseEntry data = new DatabaseEntry(tn.getBytes("UTF-8"));
             cursor.put(key, data);
+            cursor.close();
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
             t = null;
@@ -80,8 +87,25 @@ public class SimpleDBMS {
         return t;
     }
     
-    public Table updateTable(Table t) {
-        return t;
+    public void updateTable(Table t) {
+        Cursor cursor = simpleDb.openCursor(null, null);
+        StoredClassCatalog catalog = new StoredClassCatalog(dummyDb);
+        SerialBinding<Column> binding = new SerialBinding<Column>(catalog, Column.class);
+        
+        try {
+            DatabaseEntry key = new DatabaseEntry(t.getName().getBytes("UTF-8"));
+            DatabaseEntry data = new DatabaseEntry();
+            
+            for (Column c: t.getColumns()) {
+                System.out.println("Column " + c.getName() + " to entry");
+                binding.objectToEntry(c, data);
+                cursor.put(key, data);
+            }
+            
+            cursor.close();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
     }
     
     public void printTable(String tn) {
@@ -124,6 +148,8 @@ public class SimpleDBMS {
                     break;
                 }
             } while (cursor.getNext(foundKey, foundData, LockMode.DEFAULT) == OperationStatus.SUCCESS);
+            
+            cursor.close();
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -133,7 +159,7 @@ public class SimpleDBMS {
     
     public Table getTable(String tn) {
         Cursor cursor = simpleDb.openCursor(null, null);
-        StoredClassCatalog catalog = new StoredClassCatalog(simpleDb);
+        StoredClassCatalog catalog = new StoredClassCatalog(dummyDb);
         SerialBinding<Column> binding = new SerialBinding<Column>(catalog, Column.class);
         
         Table t = new Table(tn);
@@ -142,14 +168,15 @@ public class SimpleDBMS {
             DatabaseEntry foundKey = new DatabaseEntry(tn.getBytes("UTF-8"));
             DatabaseEntry foundData = new DatabaseEntry();
             cursor.getFirst(foundKey, foundData, LockMode.DEFAULT);
-            
             do {
-                if (!(binding.entryToObject(foundData) instanceof Column)) {
-                    continue;
-                }
+                if (foundData == null)
+                    throw new ErrorException(Flags.NOTHING);
+                
                 Column c = (Column) binding.entryToObject(foundData);
                 t.addColumn(c);
             } while (cursor.getNext(foundKey, foundData, LockMode.DEFAULT) == OperationStatus.SUCCESS);
+            
+            cursor.close();
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -167,11 +194,16 @@ public class SimpleDBMS {
             cursor.getFirst(foundKey, foundData, LockMode.DEFAULT);
             
             do {
+                if (foundData.getData() == null) {
+                    throw new ErrorException(Flags.SHOW_TABLES_NO_TABLE);
+                }
                 String dataString = new String(foundData.getData(), "UTF-8");
                 if (isExistingTable(dataString)) {
                     tableList.add(getTable(dataString));
                 }
             } while (cursor.getNext(foundKey, foundData, LockMode.DEFAULT) == OperationStatus.SUCCESS);
+            
+            cursor.close();
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -179,6 +211,7 @@ public class SimpleDBMS {
     }
     
     public void showTables() {
+        tableList = getAllTables();
         if (tableList.isEmpty()) {
             throw new ErrorException(Flags.SHOW_TABLES_NO_TABLE);
         }

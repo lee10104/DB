@@ -143,7 +143,7 @@ PrintMessages query() : { PrintMessages p; }
   )
 }
 
-PrintMessages createTableQuery() : { String tn; Table t; }
+PrintMessages createTableQuery() : { String tn; Table t; ArrayList<Column> cl; }
 {
   < CREATE_TABLE >
   tn = tableName()
@@ -154,8 +154,12 @@ PrintMessages createTableQuery() : { String tn; Table t; }
       t = dbms.createTable(tn);
     }
   }
-  tableElementList(t)
+  cl = tableElementList(t)
   {
+    for (Column c: cl) {
+      t.addColumn(c);
+    }
+    dbms.updateTable(t);
     return new PrintMessages(Flags.CREATE_TABLE_DONE, tn);
   }
 }
@@ -237,7 +241,7 @@ PrintMessages showTablesQuery() : {}
   }
 }
 
-void tableElementList(Table t) : { Column c; ArrayList<Column> cl = new ArrayList<Column>(); }
+ArrayList<Column> tableElementList(Table t) : { Column c; ArrayList<Column> cl = new ArrayList<Column>(); }
 {
   < LEFT_PAREN >
   c = tableElement(t, cl)
@@ -264,6 +268,8 @@ void tableElementList(Table t) : { Column c; ArrayList<Column> cl = new ArrayLis
     if (s.size() != l.size()) {
       throw new ErrorException(Flags.DUPLICATE_COLUMN_DEF_ERROR);
     }
+
+    return cl;
   }
 }
 
@@ -607,6 +613,7 @@ DataType dataType() : { int dt; int cl = 0; }
   < INT >
   {
     dt = Flags.INT;
+    return new DataType(dt, cl);
   }
 | (
     < CHAR >
@@ -619,15 +626,16 @@ DataType dataType() : { int dt; int cl = 0; }
       cl = Integer.parseInt(token.image);
     }
     < RIGHT_PAREN >
+    {
+      if (cl <= 0) {
+        throw new ErrorException(Flags.CHAR_LENGTH_ERROR);
+      }
+      return new DataType(dt, cl);
+    }
   )
 | < DATE >
   {
     dt = Flags.DATE;
-  }
-  {
-    if (dt == Flags.CHAR && cl <= 0) {
-      throw new ErrorException(Flags.CHAR_LENGTH_ERROR);
-    }
     return new DataType(dt, cl);
   }
 }
