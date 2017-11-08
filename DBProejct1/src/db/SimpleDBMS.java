@@ -203,8 +203,6 @@ public class SimpleDBMS {
             cursor.getFirst(foundKey, foundData, LockMode.DEFAULT);
             
             do {            
-                System.out.println(foundData);
-
                 if (foundData.getData() == null) {
                     break;
                 }
