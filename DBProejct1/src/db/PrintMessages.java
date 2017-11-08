@@ -68,6 +68,9 @@ public class PrintMessages {
 	            System.out.println("Drop table has failed: \'" + str + "\' is referenced by other table");
 	            break;
 	        case Flags.SHOW_TABLES_NO_TABLE:
+	            System.out.println("There is no table");
+	            break;
+	        case Flags.NO_SUCH_TABLE:
 	            System.out.println("No such table");
 	            break;
 	        case Flags.CHAR_LENGTH_ERROR:

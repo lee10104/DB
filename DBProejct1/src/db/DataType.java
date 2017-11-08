@@ -19,7 +19,7 @@ public class DataType implements Serializable {
         String str = "";
         
         if (dataType == Flags.CHAR) {
-            str = "char(" + charLength + ")";
+            str = "char(" + String.valueOf(charLength) + ")";
         } else if (dataType == Flags.INT) {
             str = "int";
         } else if (dataType == Flags.DATE) {

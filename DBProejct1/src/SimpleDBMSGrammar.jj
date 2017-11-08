@@ -151,20 +151,17 @@ PrintMessages createTableQuery() : { String tn; Table t; ArrayList<Column> cl; }
     if (dbms.isExistingTable(tn)) {
       throw new ErrorException(Flags.TABLE_EXISTENCE_ERROR);
     } else {
-      t = dbms.createTable(tn);
+      t = new Table(tn);
     }
   }
-  cl = tableElementList(t)
+  tableElementList(t)
   {
-    for (Column c: cl) {
-      t.addColumn(c);
-    }
-    dbms.updateTable(t);
+    dbms.createTable(t);
     return new PrintMessages(Flags.CREATE_TABLE_DONE, tn);
   }
 }
 
-PrintMessages dropTableQuery() : { String tn; boolean isDeleted; }
+PrintMessages dropTableQuery() : { String tn; }
 {
   < DROP_TABLE >
   tn = tableName()
@@ -173,11 +170,14 @@ PrintMessages dropTableQuery() : { String tn; boolean isDeleted; }
       throw new ErrorException(Flags.NO_SUCH_TABLE);
     }
 
-    isDeleted = dbms.dropTable(tn);
-
-    if (!isDeleted) {
-      throw new ErrorException(Flags.DROP_REFERENCED_TABLE_ERROR, tn);
+    Table t = dbms.getTable(tn);
+    for (Column c: t.getColumns()) {
+      if (c.getIsReferenced()) {
+        throw new ErrorException(Flags.DROP_REFERENCED_TABLE_ERROR, tn);
+      }
     }
+    
+    dbms.dropTable(tn);
 
     return new PrintMessages(Flags.DROP_TABLE_DONE, tn);
   }
@@ -241,70 +241,51 @@ PrintMessages showTablesQuery() : {}
   }
 }
 
-ArrayList<Column> tableElementList(Table t) : { Column c; ArrayList<Column> cl = new ArrayList<Column>(); }
+void tableElementList(Table t) : { int key; boolean pk = false; }
 {
   < LEFT_PAREN >
-  c = tableElement(t, cl)
+  key = tableElement(t)
   {
-    if (c != null) {
-      cl.add(c);
+    if (key == Flags.PRIMARY_KEY) {
+      pk = true;
     }
   }
   (
     < COMMA >
-    c = tableElement(t, cl)
+    key = tableElement(t)
     {
-      if (c!= null) {
-        cl.add(c);
+      if (key == Flags.PRIMARY_KEY) {
+        if (pk == true) {
+          throw new ErrorException(Flags.DUPLICATE_PRIMARY_KEY_DEF_ERROR);
+        }
+        pk = true;
       }
     }
   )*
   < RIGHT_PAREN >
-  {
-    // column 중복 검사
-    List<Column> l = cl;
-    Set<Column> s = new HashSet<Column>();
-    s.addAll(l);
-    if (s.size() != l.size()) {
-      throw new ErrorException(Flags.DUPLICATE_COLUMN_DEF_ERROR);
-    }
-
-    return cl;
-  }
 }
 
-Column tableElement(Table t, ArrayList<Column> cl) : { Column c; int key; boolean pk = false; }
+int tableElement(Table t) : { Column c; int key = Flags.NOTHING; }
 {
-  c = columnDefinition()
-  {
-    return c;
-  }
-| key = tableConstraintDefinition(t, cl)
-  {
-
-    if (key == Flags.PRIMARY_KEY) {
-      if (pk) {
-        throw new ErrorException(Flags.DUPLICATE_PRIMARY_KEY_DEF_ERROR);
-      }
-      pk = true;
+  (    columnDefinition(t)
+  | key = tableConstraintDefinition(t)
+  )
+  (    {
+      return key;
     }
-    
-    if (key == Flags.FOREIGN_KEY) {
-    }
-    return null;
-  }
+  )
 }
 
-Column columnDefinition() : { String cn; DataType dt; boolean isNull = false; }
+void columnDefinition(Table t) : { String cn; DataType dt; boolean isNull = true; }
 {
   cn = columnName()
   dt = dataType()
   (
     < NOT_NULL >
-    { isNull = true; }
+    { isNull = false; }
   )?
   {
-    return new Column(cn, dt, isNull);
+    t.addColumn(new Column(cn, dt, isNull));
   }
 }
 
@@ -423,14 +404,31 @@ void nullOperation(): {}
   < NULL >
 }
 
-int tableConstraintDefinition(Table t, ArrayList<Column> cl) : { ArrayList<String> cnl; }
+int tableConstraintDefinition(Table t) : { ArrayList<String> pkcl; ArrayList<Column> cl; }
 {
-  cnl = primaryKeyConstraint()
+  pkcl = primaryKeyConstraint()
   {
-    // 없는 column을 primary key로 지정할 경우
-    String notExistingColumn = dbms.compareColumnLists(cnl, cl);
-    if (notExistingColumn != null) {
-      throw new ErrorException(Flags.NON_EXISTING_COLUMN_DEF_ERROR, notExistingColumn);
+    // primary key list에 중복 있는 경우
+    List<String> l = pkcl;
+    Set<String> s = new HashSet<String>();
+    s.addAll(l);
+    if (s.size() != l.size()) {
+      throw new ErrorException(Flags.DUPLICATE_COLUMN_DEF_ERROR);
+    }
+    // column에 primary key 설정, 존재하지 않는 column일 경우 에러
+    for (String pkc: pkcl) {
+      boolean exist = false;
+      for (Column c: t.getColumns()) {
+        if (c.getName().equals(pkc)) {
+          exist = true;
+          c.setIsPrimaryKey(true);
+          c.setIsNull(false);
+          break;
+        }
+      }
+      if (!exist) {
+        throw new ErrorException(Flags.NON_EXISTING_COLUMN_DEF_ERROR, pkc);
+      }
     }
     return Flags.PRIMARY_KEY;
   }
@@ -514,13 +512,13 @@ ArrayList<String> primaryKeyConstraint() : { ArrayList<String> pkl;}
   }
 }
 
-void referentialConstraint(Table t) : { ArrayList<String> cnl; String rtn; ArrayList<String> fkl; ArrayList<Column> rcl = new ArrayList<Column>(); ArrayList<Column> cl = new ArrayList<Column>(); }
+void referentialConstraint(Table t) : { ArrayList<String> cnl; String rtn; ArrayList<String> fknl; }
 {
   < FOREIGN_KEY >
   cnl = columnNameList()
   < REFERENCES >
   rtn = tableName()
-  fkl = columnNameList()
+  fknl = columnNameList()
   {
     // foreign key가 존재하지 않는 table을 참조하는 경우
     if (!dbms.isExistingTable(rtn)) {
@@ -528,15 +526,17 @@ void referentialConstraint(Table t) : { ArrayList<String> cnl; String rtn; Array
     }
 
     // foreign key가 참조하는 column의 개수가 다른 경우
-    if (cnl.size() != fkl.size()) {
+    if (cnl.size() != fknl.size()) {
       throw new ErrorException(Flags.REFERENCE_TYPE_ERROR);
     }
 
     String notExistingColumn;
+    ArrayList<Column> rcl = new ArrayList<Column>();
+    ArrayList<Column> cl = new ArrayList<Column>();
     
     // foreign key가 존재하지 않는 column을 참조하는 경우
     Table rt = dbms.getTable(rtn);
-    notExistingColumn = dbms.compareColumnLists(fkl, rt.getColumns());
+    notExistingColumn = dbms.compareColumnLists(fknl, rt.getColumns());
     if (notExistingColumn != null) {
       throw new ErrorException(Flags.REFERENCE_COLUMN_EXISTENCE_ERROR);
     }
@@ -547,17 +547,16 @@ void referentialConstraint(Table t) : { ArrayList<String> cnl; String rtn; Array
       throw new ErrorException(Flags.NON_EXISTING_COLUMN_DEF_ERROR, notExistingColumn);
     }
 
+    int len = cnl.size();
     // 지목된 column들 추출
-    for (Column rc: rt.getColumns()) {
-      for (String fk: fkl) {
-        if (fk.equals(rc.getName())) {
+    for (int i = 0; i < len; i++) {
+      for (Column rc: rt.getColumns()) {
+        if (rc.getName().equals(fknl.get(i))) {
           rcl.add(rc);
         }
       }
-    }
-    for (Column c: t.getColumns()) {
-      for (String cn: cnl) {
-        if (cn.equals(c.getName())) {
+      for (Column c: t.getColumns()) {
+        if (c.getName().equals(cnl.get(i))) {
           cl.add(c);
         }
       }
@@ -565,25 +564,23 @@ void referentialConstraint(Table t) : { ArrayList<String> cnl; String rtn; Array
 
     // primary key가 아닌 column을 참조하는 경우
     for (Column c: cl) {
-      if (!c.getIsPrimaryKey()) {
+      if (c.getIsPrimaryKey()) {
         throw new ErrorException(Flags.REFERENCE_NON_PRIMARY_KEY_ERROR);
       }
     }
 
     // foreign key가 참조하는 column의 타입이 다른 경우
-    boolean flag = true;
-    for (Column rc: rcl) {
-      for (Column c: cl) {
-        if (c.getName().equals(rc.getName())) {
-          if (c.getDataType() != rc.getDataType()) {
-            flag = false;
-            break;
-          }
-        }
+    for (int i = 0; i < len; i++) {
+      if (!cl.get(i).getDataType().toString().equals(rcl.get(i).getDataType().toString())) {
+        throw new ErrorException(Flags.REFERENCE_TYPE_ERROR);
       }
     }
-    if (!flag) {
-      throw new ErrorException(Flags.REFERENCE_TYPE_ERROR);
+
+    // column에 foreign key 정보 저장
+    for (int i = 0; i < len; i++) {
+      cl.get(i).setIsForeignKey(true);
+      cl.get(i).setForeignKey(rt, rcl.get(i));
+      rcl.get(i).setIsReferenced(true);
     }
   }
 }

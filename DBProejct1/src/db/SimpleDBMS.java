@@ -5,8 +5,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.io.UnsupportedEncodingException;
 
-import com.sleepycat.bind.serial.SerialBinding;
-import com.sleepycat.bind.serial.StoredClassCatalog;
 import com.sleepycat.je.*;
 
 public class SimpleDBMS {
@@ -33,9 +31,10 @@ public class SimpleDBMS {
         dummyDb = simpleDbEnv.openDatabase(null, "dummydb", dbConfig);
         
         // tableList 가져오기
-        // tableList = getAllTables();
+        getAllTablesFromDb();
     }
 
+    // db 닫기
     public void close() {
         if (simpleDb != null)
             simpleDb.close();
@@ -45,60 +44,36 @@ public class SimpleDBMS {
             simpleDbEnv.close();
     }
     
+    // tableList에서의 t의 존재 여부
     public boolean isExistingTable(String tn) {
-        boolean isExist;
-        Cursor cursor = simpleDb.openCursor(null, null);
-        
-        try {
-            DatabaseEntry foundKey = new DatabaseEntry(T.getBytes("UTF-8"));
-            DatabaseEntry foundData = new DatabaseEntry();
-
-            cursor.getFirst(foundKey, foundData, LockMode.DEFAULT);
-
-            if (foundData.getData() == null)
-                isExist = false;
-            else
-                isExist = true;
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-            isExist = false;
+        if (tableList == null) {
+            return false;
         }
-        
-        cursor.close();
-        
-        return isExist;
-    }
 
-    public Table createTable(String tn) {
-        Table t = new Table(tn);
-        
+        for (Table t: tableList) {
+            if (t.getName().equals(tn)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+  
+    // table의 정보를 db에 저장
+    public void createTable(Table t) {
+        tableList.add(t);
         Cursor cursor = simpleDb.openCursor(null, null);
+        DatabaseEntry key, data;
         
         try {
-            DatabaseEntry key = new DatabaseEntry(T.getBytes("UTF-8"));
-            DatabaseEntry data = new DatabaseEntry(tn.getBytes("UTF-8"));
+            key = new DatabaseEntry(T.getBytes("UTF-8"));
+            data = new DatabaseEntry(t.getName().getBytes("UTF-8"));
             cursor.put(key, data);
-            cursor.close();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-            t = null;
-        }
 
-        return t;
-    }
-    
-    public void updateTable(Table t) {
-        Cursor cursor = simpleDb.openCursor(null, null);
-        StoredClassCatalog catalog = new StoredClassCatalog(dummyDb);
-        SerialBinding<Column> binding = new SerialBinding<Column>(catalog, Column.class);
-        
-        try {
-            DatabaseEntry key = new DatabaseEntry(t.getName().getBytes("UTF-8"));
-            DatabaseEntry data = new DatabaseEntry();
+            key = new DatabaseEntry(t.getName().getBytes("UTF-8"));
             
             for (Column c: t.getColumns()) {
-                System.out.println("Column " + c.getName() + " to entry");
-                binding.objectToEntry(c, data);
+                data = new DatabaseEntry(c.toString().getBytes("UTF-8"));
                 cursor.put(key, data);
             }
             
@@ -108,46 +83,61 @@ public class SimpleDBMS {
         }
     }
     
+    // tableList에서 table을 가져와 print
     public void printTable(String tn) {
-        for (Table t: tableList) {
-            if (t.getName().equals(tn)) {
-                PrintMessages.printLine();
-                System.out.println("table_name [" + tn + "]");
-                System.out.println("column_name\ttype\tnull\tkey");
-                for (Column c: t.getColumns()) {
-                    System.out.println(c.toString());
-                }
-                PrintMessages.printLine();
-                break;
+        if (tableList == null) {
+            getAllTablesFromDb();
+        }
+        
+        Table t = getTable(tn);
+        if (t.getName().equals(tn)) {
+            PrintMessages.printLine();
+            System.out.println("table_name [" + tn + "]");
+            System.out.println("column_name\ttype\tnull\tkey");
+            for (Column c: t.getColumns()) {
+                System.out.println(c.printColumn());
             }
+            PrintMessages.printLine();
         }
     }
-    
+        
+    // tableList에서 table를 삭제하고 db에서도 삭제
     public boolean dropTable(String tn) {
         boolean isDeleted = false;
         Cursor cursor = simpleDb.openCursor(null, null);
         
         try {
-            DatabaseEntry foundKey = new DatabaseEntry(T.getBytes("UTF-8"));
-            DatabaseEntry foundData = new DatabaseEntry();
-            cursor.getFirst(foundKey, foundData, LockMode.DEFAULT);
+            DatabaseEntry tableKey = new DatabaseEntry(T.getBytes("UTF-8"));
+            DatabaseEntry tableName = new DatabaseEntry();
+            cursor.getSearchKey(tableKey, tableName, LockMode.DEFAULT);
             
-            for (Table t: tableList) {
-                if (t.getName().equals(tn)) {
-                    tableList.remove(t);
-                    break;
-                }
-            }
+            Table t = getTable(tn);
+            tableList.remove(t);
             
             do {
-                String dataString = new String(foundData.getData(), "UTF-8");
+                String tableNameStr = new String(tableName.getData(), "UTF-8");
                 
-                if (dataString.equals(tn)) {
+                if (tableNameStr.equals(tn)) {
                     cursor.delete();
                     isDeleted = true;
+                    
+                    Cursor newCursor = simpleDb.openCursor(null, null);
+                    try {
+                        DatabaseEntry columnKey = new DatabaseEntry(tn.getBytes("UTF-8"));
+                        DatabaseEntry columnName = new DatabaseEntry();
+                        newCursor.getSearchKey(columnKey, columnName, LockMode.DEFAULT);
+                        do {
+                            newCursor.delete();
+                        } while (newCursor.getNextDup(columnKey, columnName, LockMode.DEFAULT) == OperationStatus.SUCCESS);
+                        
+                        newCursor.close();
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
                     break;
                 }
-            } while (cursor.getNext(foundKey, foundData, LockMode.DEFAULT) == OperationStatus.SUCCESS);
+
+            } while (cursor.getNextDup(tableKey, tableName, LockMode.DEFAULT) == OperationStatus.SUCCESS);
             
             cursor.close();
         } catch (UnsupportedEncodingException e) {
@@ -157,24 +147,42 @@ public class SimpleDBMS {
         return isDeleted;
     }
     
+    // tableList에서 table을 가져옴
     public Table getTable(String tn) {
+        for (Table t: tableList) {
+            if (t.getName().equals(tn)) {
+                return t;
+            }
+        }
+        
+        return null;
+    }
+    
+    // db에서 table 정보를 읽어옴
+    public Table getTableFromDb(String tn) {
         Cursor cursor = simpleDb.openCursor(null, null);
-        StoredClassCatalog catalog = new StoredClassCatalog(dummyDb);
-        SerialBinding<Column> binding = new SerialBinding<Column>(catalog, Column.class);
         
         Table t = new Table(tn);
         
         try {
-            DatabaseEntry foundKey = new DatabaseEntry(tn.getBytes("UTF-8"));
-            DatabaseEntry foundData = new DatabaseEntry();
-            cursor.getFirst(foundKey, foundData, LockMode.DEFAULT);
+            DatabaseEntry key = new DatabaseEntry(tn.getBytes("UTF-8"));                   
+
+            DatabaseEntry column = new DatabaseEntry();
+            cursor.getSearchKey(key, column, LockMode.DEFAULT);
             do {
-                if (foundData == null)
+                if (column == null) {
                     throw new ErrorException(Flags.NOTHING);
+                }
                 
-                Column c = (Column) binding.entryToObject(foundData);
-                t.addColumn(c);
-            } while (cursor.getNext(foundKey, foundData, LockMode.DEFAULT) == OperationStatus.SUCCESS);
+                try {
+                    String cs = new String(column.getData(), "UTF-8");
+                    Column c = stringToColumn(cs);
+                    t.addColumn(c);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    break;
+                }
+            } while (cursor.getNextDup(key, column, LockMode.DEFAULT) == OperationStatus.SUCCESS);
             
             cursor.close();
         } catch (UnsupportedEncodingException e) {
@@ -184,8 +192,9 @@ public class SimpleDBMS {
         return t;
     }
     
-    public ArrayList<Table> getAllTables() {
-        ArrayList<Table> tableList = new ArrayList<Table>();
+    // db에 들어있는 table 정보를 모두 tableList로 읽어옴
+    public void getAllTablesFromDb() {
+        tableList = new ArrayList<Table>();
         Cursor cursor = simpleDb.openCursor(null, null);
         
         try {
@@ -193,25 +202,28 @@ public class SimpleDBMS {
             DatabaseEntry foundData = new DatabaseEntry();
             cursor.getFirst(foundKey, foundData, LockMode.DEFAULT);
             
-            do {
+            do {            
+                System.out.println(foundData);
+
                 if (foundData.getData() == null) {
-                    throw new ErrorException(Flags.SHOW_TABLES_NO_TABLE);
+                    break;
                 }
-                String dataString = new String(foundData.getData(), "UTF-8");
-                if (isExistingTable(dataString)) {
-                    tableList.add(getTable(dataString));
-                }
-            } while (cursor.getNext(foundKey, foundData, LockMode.DEFAULT) == OperationStatus.SUCCESS);
+                String tableName = new String(foundData.getData(), "UTF-8");
+                tableList.add(getTableFromDb(tableName));
+            } while (cursor.getNextDup(foundKey, foundData, LockMode.DEFAULT) == OperationStatus.SUCCESS);
             
             cursor.close();
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
-        return tableList;
     }
     
+    // tableList에서 table 이름을 모두 print함
     public void showTables() {
-        tableList = getAllTables();
+        if (tableList == null) {
+            getAllTablesFromDb();
+        }
+        
         if (tableList.isEmpty()) {
             throw new ErrorException(Flags.SHOW_TABLES_NO_TABLE);
         }
@@ -237,5 +249,67 @@ public class SimpleDBMS {
             }
         }
         return columnName;
+    }
+
+    public Column stringToColumn(String str) {
+        String[] arr = str.split("\t");
+
+        DataType d;
+        if (arr[1].equals("int")) {
+            d = new DataType(Flags.INT, 0);
+        } else if (arr[1].equals("date")) {
+            d = new DataType(Flags.DATE, 0);
+        } else {
+            int s = arr[1].indexOf('(');
+            int e = arr[1].indexOf(')');
+
+            d = new DataType(Flags.CHAR, Integer.parseInt(arr[1].substring(s+ 1, e)));
+        }
+
+        boolean isNull;
+        if (arr[2].equals("Y")) {
+            isNull = true;
+        } else {
+            isNull = false;
+        }
+        
+        boolean isReferenced;
+        if (arr[3].equals("Y")) {
+            isReferenced = true;
+        } else {
+            isReferenced = false;
+        }
+
+        boolean pk = false, fk = false;
+        Table rt = null;
+        Column rc = null;
+        if (arr.length > 4) {
+            if (arr[3].equals("PRI/FOR")) {
+                pk = true;
+                fk = true;
+            } else if (arr[4].equals("FOR")) {
+                fk = true;
+            } else if (arr[4].equals("PRI")) {
+                pk = true;
+            }
+        }
+        if (fk) {
+            rt = getTable(arr[5]);
+            for (Column c: rt.getColumns()) {
+                if (c.getName().equals(arr[6])) {
+                    rc = c;
+                }
+            }
+        }
+
+        Column c = new Column(arr[0], d, isNull);
+        c.setIsForeignKey(fk);
+        c.setIsPrimaryKey(pk);
+        c.setIsReferenced(isReferenced);
+        if (fk && rt != null && rc != null) {
+            c.setForeignKey(rt, rc);
+        }
+
+        return c;
     }
 }

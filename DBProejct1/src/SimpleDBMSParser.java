@@ -126,30 +126,30 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     if (dbms.isExistingTable(tn)) {
       {if (true) throw new ErrorException(Flags.TABLE_EXISTENCE_ERROR);}
     } else {
-      t = dbms.createTable(tn);
+      t = new Table(tn);
     }
-    cl = tableElementList(t);
-    for (Column c: cl) {
-      t.addColumn(c);
-    }
-    dbms.updateTable(t);
+    tableElementList(t);
+    dbms.createTable(t);
     {if (true) return new PrintMessages(Flags.CREATE_TABLE_DONE, tn);}
     throw new Error("Missing return statement in function");
   }
 
   static final public PrintMessages dropTableQuery() throws ParseException {
-                                   String tn; boolean isDeleted;
+                                   String tn;
     jj_consume_token(DROP_TABLE);
     tn = tableName();
     if (!dbms.isExistingTable(tn)) {
       {if (true) throw new ErrorException(Flags.NO_SUCH_TABLE);}
     }
 
-    isDeleted = dbms.dropTable(tn);
-
-    if (!isDeleted) {
-      {if (true) throw new ErrorException(Flags.DROP_REFERENCED_TABLE_ERROR, tn);}
+    Table t = dbms.getTable(tn);
+    for (Column c: t.getColumns()) {
+      if (c.getIsReferenced()) {
+        {if (true) throw new ErrorException(Flags.DROP_REFERENCED_TABLE_ERROR, tn);}
+      }
     }
+
+    dbms.dropTable(tn);
 
     {if (true) return new PrintMessages(Flags.DROP_TABLE_DONE, tn);}
     throw new Error("Missing return statement in function");
@@ -208,12 +208,12 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  static final public ArrayList<Column> tableElementList(Table t) throws ParseException {
-                                                Column c; ArrayList<Column> cl = new ArrayList<Column>();
+  static final public void tableElementList(Table t) throws ParseException {
+                                   int key; boolean pk = false;
     jj_consume_token(LEFT_PAREN);
-    c = tableElement(t, cl);
-    if (c != null) {
-      cl.add(c);
+    key = tableElement(t);
+    if (key == Flags.PRIMARY_KEY) {
+      pk = true;
     }
     label_2:
     while (true) {
@@ -226,68 +226,50 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
         break label_2;
       }
       jj_consume_token(COMMA);
-      c = tableElement(t, cl);
-      if (c!= null) {
-        cl.add(c);
+      key = tableElement(t);
+      if (key == Flags.PRIMARY_KEY) {
+        if (pk == true) {
+          {if (true) throw new ErrorException(Flags.DUPLICATE_PRIMARY_KEY_DEF_ERROR);}
+        }
+        pk = true;
       }
     }
     jj_consume_token(RIGHT_PAREN);
-    // column Ï§ëÎ≥µ Í≤??Ç¨
-    List<Column> l = cl;
-    Set<Column> s = new HashSet<Column>();
-    s.addAll(l);
-    if (s.size() != l.size()) {
-      {if (true) throw new ErrorException(Flags.DUPLICATE_COLUMN_DEF_ERROR);}
-    }
-
-    {if (true) return cl;}
-    throw new Error("Missing return statement in function");
   }
 
-  static final public Column tableElement(Table t, ArrayList<Column> cl) throws ParseException {
-                                                       Column c; int key; boolean pk = false;
+  static final public int tableElement(Table t) throws ParseException {
+                              Column c; int key = Flags.NOTHING;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case LEGAL_IDENTIFIER:
-      c = columnDefinition();
-    {if (true) return c;}
+      columnDefinition(t);
       break;
     case PRIMARY_KEY:
     case FOREIGN_KEY:
-      key = tableConstraintDefinition(t, cl);
-    if (key == Flags.PRIMARY_KEY) {
-      if (pk) {
-        {if (true) throw new ErrorException(Flags.DUPLICATE_PRIMARY_KEY_DEF_ERROR);}
-      }
-      pk = true;
-    }
-
-    if (key == Flags.FOREIGN_KEY) {
-    }
-    {if (true) return null;}
+      key = tableConstraintDefinition(t);
       break;
     default:
       jj_la1[5] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
+      {if (true) return key;}
     throw new Error("Missing return statement in function");
   }
 
-  static final public Column columnDefinition() throws ParseException {
-                              String cn; DataType dt; boolean isNull = false;
+  static final public void columnDefinition(Table t) throws ParseException {
+                                   String cn; DataType dt; boolean isNull = true;
     cn = columnName();
     dt = dataType();
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case NOT_NULL:
       jj_consume_token(NOT_NULL);
-      isNull = true;
+      isNull = false;
       break;
     default:
       jj_la1[6] = jj_gen;
       ;
     }
-    {if (true) return new Column(cn, dt, isNull);}
-    throw new Error("Missing return statement in function");
+    t.addColumn(new Column(cn, dt, isNull));
   }
 
   static final public void whereClause() throws ParseException {
@@ -462,15 +444,32 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     jj_consume_token(NULL);
   }
 
-  static final public int tableConstraintDefinition(Table t, ArrayList<Column> cl) throws ParseException {
-                                                                 ArrayList<String> cnl;
+  static final public int tableConstraintDefinition(Table t) throws ParseException {
+                                           ArrayList<String> pkcl; ArrayList<Column> cl;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case PRIMARY_KEY:
-      cnl = primaryKeyConstraint();
-    // ?óÜ?äî column?ùÑ primary keyÎ°? Ïß??†ï?ï† Í≤ΩÏö∞
-    String notExistingColumn = dbms.compareColumnLists(cnl, cl);
-    if (notExistingColumn != null) {
-      {if (true) throw new ErrorException(Flags.NON_EXISTING_COLUMN_DEF_ERROR, notExistingColumn);}
+      pkcl = primaryKeyConstraint();
+    // primary key list?óê Ï§ëÎ≥µ ?ûà?äî Í≤ΩÏö∞
+    List<String> l = pkcl;
+    Set<String> s = new HashSet<String>();
+    s.addAll(l);
+    if (s.size() != l.size()) {
+      {if (true) throw new ErrorException(Flags.DUPLICATE_COLUMN_DEF_ERROR);}
+    }
+    // column?óê primary key ?Ñ§?†ï, Ï°¥Ïû¨?ïòÏß? ?ïä?äî column?ùº Í≤ΩÏö∞ ?óê?ü¨
+    for (String pkc: pkcl) {
+      boolean exist = false;
+      for (Column c: t.getColumns()) {
+        if (c.getName().equals(pkc)) {
+          exist = true;
+          c.setIsPrimaryKey(true);
+          c.setIsNull(false);
+          break;
+        }
+      }
+      if (!exist) {
+        {if (true) throw new ErrorException(Flags.NON_EXISTING_COLUMN_DEF_ERROR, pkc);}
+      }
     }
     {if (true) return Flags.PRIMARY_KEY;}
       break;
@@ -621,27 +620,29 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
   }
 
   static final public void referentialConstraint(Table t) throws ParseException {
-                                        ArrayList<String> cnl; String rtn; ArrayList<String> fkl; ArrayList<Column> rcl = new ArrayList<Column>(); ArrayList<Column> cl = new ArrayList<Column>();
+                                        ArrayList<String> cnl; String rtn; ArrayList<String> fknl;
     jj_consume_token(FOREIGN_KEY);
     cnl = columnNameList();
     jj_consume_token(REFERENCES);
     rtn = tableName();
-    fkl = columnNameList();
+    fknl = columnNameList();
     // foreign keyÍ∞? Ï°¥Ïû¨?ïòÏß? ?ïä?äî table?ùÑ Ï∞∏Ï°∞?ïò?äî Í≤ΩÏö∞
     if (!dbms.isExistingTable(rtn)) {
       {if (true) throw new ErrorException(Flags.REFERENCE_TABLE_EXISTENCE_ERROR);}
     }
 
     // foreign keyÍ∞? Ï∞∏Ï°∞?ïò?äî column?ùò Í∞úÏàòÍ∞? ?ã§Î•? Í≤ΩÏö∞
-    if (cnl.size() != fkl.size()) {
+    if (cnl.size() != fknl.size()) {
       {if (true) throw new ErrorException(Flags.REFERENCE_TYPE_ERROR);}
     }
 
     String notExistingColumn;
+    ArrayList<Column> rcl = new ArrayList<Column>();
+    ArrayList<Column> cl = new ArrayList<Column>();
 
     // foreign keyÍ∞? Ï°¥Ïû¨?ïòÏß? ?ïä?äî column?ùÑ Ï∞∏Ï°∞?ïò?äî Í≤ΩÏö∞
     Table rt = dbms.getTable(rtn);
-    notExistingColumn = dbms.compareColumnLists(fkl, rt.getColumns());
+    notExistingColumn = dbms.compareColumnLists(fknl, rt.getColumns());
     if (notExistingColumn != null) {
       {if (true) throw new ErrorException(Flags.REFERENCE_COLUMN_EXISTENCE_ERROR);}
     }
@@ -652,17 +653,16 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
       {if (true) throw new ErrorException(Flags.NON_EXISTING_COLUMN_DEF_ERROR, notExistingColumn);}
     }
 
+    int len = cnl.size();
     // Ïß?Î™©Îêú column?ì§ Ï∂îÏ∂ú
-    for (Column rc: rt.getColumns()) {
-      for (String fk: fkl) {
-        if (fk.equals(rc.getName())) {
+    for (int i = 0; i < len; i++) {
+      for (Column rc: rt.getColumns()) {
+        if (rc.getName().equals(fknl.get(i))) {
           rcl.add(rc);
         }
       }
-    }
-    for (Column c: t.getColumns()) {
-      for (String cn: cnl) {
-        if (cn.equals(c.getName())) {
+      for (Column c: t.getColumns()) {
+        if (c.getName().equals(cnl.get(i))) {
           cl.add(c);
         }
       }
@@ -670,25 +670,23 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
 
     // primary keyÍ∞? ?ïÑ?ãå column?ùÑ Ï∞∏Ï°∞?ïò?äî Í≤ΩÏö∞
     for (Column c: cl) {
-      if (!c.getIsPrimaryKey()) {
+      if (c.getIsPrimaryKey()) {
         {if (true) throw new ErrorException(Flags.REFERENCE_NON_PRIMARY_KEY_ERROR);}
       }
     }
 
     // foreign keyÍ∞? Ï∞∏Ï°∞?ïò?äî column?ùò ???ûÖ?ù¥ ?ã§Î•? Í≤ΩÏö∞
-    boolean flag = true;
-    for (Column rc: rcl) {
-      for (Column c: cl) {
-        if (c.getName().equals(rc.getName())) {
-          if (c.getDataType() != rc.getDataType()) {
-            flag = false;
-            break;
-          }
-        }
+    for (int i = 0; i < len; i++) {
+      if (!cl.get(i).getDataType().toString().equals(rcl.get(i).getDataType().toString())) {
+        {if (true) throw new ErrorException(Flags.REFERENCE_TYPE_ERROR);}
       }
     }
-    if (!flag) {
-      {if (true) throw new ErrorException(Flags.REFERENCE_TYPE_ERROR);}
+
+    // column?óê foreign key ?†ïÎ≥? ???û•
+    for (int i = 0; i < len; i++) {
+      cl.get(i).setIsForeignKey(true);
+      cl.get(i).setForeignKey(rt, rcl.get(i));
+      rcl.get(i).setIsReferenced(true);
     }
   }
 
@@ -796,22 +794,14 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     finally { jj_save(4, xla); }
   }
 
-  static private boolean jj_3_1() {
-    if (jj_scan_token(AS)) return true;
-    if (jj_3R_8()) return true;
-    return false;
-  }
-
   static private boolean jj_3_5() {
     if (jj_3R_8()) return true;
     if (jj_scan_token(PERIOD)) return true;
     return false;
   }
 
-  static private boolean jj_3R_9() {
-    if (jj_3R_10()) return true;
-    if (jj_scan_token(COMP_OP)) return true;
-    if (jj_3R_10()) return true;
+  static private boolean jj_3_2() {
+    if (jj_3R_9()) return true;
     return false;
   }
 
@@ -828,23 +818,13 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     return false;
   }
 
-  static private boolean jj_3R_14() {
-    if (jj_scan_token(LEGAL_IDENTIFIER)) return true;
-    return false;
-  }
-
-  static private boolean jj_3_2() {
-    if (jj_3R_9()) return true;
-    return false;
-  }
-
   static private boolean jj_3_3() {
     if (jj_3R_8()) return true;
     if (jj_scan_token(PERIOD)) return true;
     return false;
   }
 
-  static private boolean jj_3R_8() {
+  static private boolean jj_3R_14() {
     if (jj_scan_token(LEGAL_IDENTIFIER)) return true;
     return false;
   }
@@ -875,6 +855,24 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
   static private boolean jj_3_4() {
     if (jj_3R_8()) return true;
     if (jj_scan_token(PERIOD)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_8() {
+    if (jj_scan_token(LEGAL_IDENTIFIER)) return true;
+    return false;
+  }
+
+  static private boolean jj_3_1() {
+    if (jj_scan_token(AS)) return true;
+    if (jj_3R_8()) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_9() {
+    if (jj_3R_10()) return true;
+    if (jj_scan_token(COMP_OP)) return true;
+    if (jj_3R_10()) return true;
     return false;
   }
 
