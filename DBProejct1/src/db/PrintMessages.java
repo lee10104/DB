@@ -30,13 +30,12 @@ public class PrintMessages {
 	        case Flags.DESC_DONE:
 	            break;
 	        case Flags.INSERT_DONE:
-	            System.out.println("\'INSERT\' requested");
+	            System.out.println("The row is inserted");
 	            break;
 	        case Flags.DELETE_DONE:
-	            System.out.println("\'DELETE\' requested");
+	            System.out.println(str + " row(s) are deleted");
 	            break;
 	        case Flags.SELECT_DONE:
-	            System.out.println("\'SELECT\' requested");
 	            break;
 	        case Flags.SHOW_TABLES_DONE:
 		    	break;
@@ -76,6 +75,41 @@ public class PrintMessages {
 	        case Flags.CHAR_LENGTH_ERROR:
 	            System.out.println("Char length should be over 0");
 	            break;
+	        case Flags.INSERT_DUPLICATE_PRIMARY_KEY_ERROR:
+	            System.out.println("Insertion has failed: Primary key duplication");
+	            break;
+	        case Flags.INSERT_REFERENTIAL_INTEGRITY_ERROR:
+	            System.out.println("Insertion has failed: Referential integrity violation");
+	            break;
+	        case Flags.INSERT_TYPE_MISMATCH_ERROR:
+	            System.out.println("Insertion has failed: Types are not matched");
+	            break;
+	        case Flags.INSERT_COLUMN_EXISTENCE_ERROR:
+	            System.out.println("Insertion has failed: \'" + str + "\' does not exist");
+	            break;
+	        case Flags.INSERT_COLUMN_NON_NULLABLE_ERROR:
+	            System.out.println("Insertion has failed: \'" + str + "\' is not nullable");
+	            break;
+	        case Flags.DELETE_REFERENTIAL_INTEGRITY_PASSED:
+	            System.out.println(str + " row(s) are not deleted due to referential integrity");
+	            break;
+	        case Flags.SELECT_TABLE_EXISTENCE_ERROR:
+	            System.out.println("Selection has failed: \'" + str + "\' does not exist");
+	            break;
+	        case Flags.SELECT_COLUMN_RESOLVE_ERROR:
+	            System.out.println("Selection has failed: fail to resolve \'" + str + "\'");
+	            break;
+	        case Flags.WHERE_INCOMPARABLE_ERROR:
+	            System.out.println("Where clause try to compare incomparable values");
+	            break;
+	        case Flags.WHERE_TABLE_NOT_SPECIFIED:
+	            System.out.println("Where clause try to reference tables which are not specified");
+	            break;
+	        case Flags.WHERE_COLUMN_NOT_EXIST:
+	            System.out.println("Where clause try to reference non existing column");
+	            break;
+	        case Flags.WHERE_AMBIGUOUS_REFERENCE:
+	            System.out.println("Where clause contains ambiguous reference");
 	        default:
 	            break;
 	    }

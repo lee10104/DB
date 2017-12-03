@@ -29,9 +29,25 @@ public class Flags {
     public static final int DROP_REFERENCED_TABLE_ERROR = 16;
     // show table
     public static final int SHOW_TABLES_NO_TABLE = 17;
+    // insert data
+    public static final int INSERT_DUPLICATE_PRIMARY_KEY_ERROR = 18;
+    public static final int INSERT_REFERENTIAL_INTEGRITY_ERROR = 19;
+    public static final int INSERT_TYPE_MISMATCH_ERROR = 20;
+    public static final int INSERT_COLUMN_EXISTENCE_ERROR = 21;
+    public static final int INSERT_COLUMN_NON_NULLABLE_ERROR = 22;
+    // delete data
+    public static final int DELETE_REFERENTIAL_INTEGRITY_PASSED = 23;
+    // select
+    public static final int SELECT_TABLE_EXISTENCE_ERROR = 24;
+    public static final int SELECT_COLUMN_RESOLVE_ERROR = 25;
+    // where
+    public static final int WHERE_INCOMPARABLE_ERROR = 26;
+    public static final int WHERE_TABLE_NOT_SPECIFIED = 27;
+    public static final int WHERE_COLUMN_NOT_EXIST = 28;
+    public static final int WHERE_AMBIGUOUS_REFERENCE = 29;
     // else
-    public static final int NO_SUCH_TABLE = 18;
-    public static final int CHAR_LENGTH_ERROR = 19;
+    public static final int NO_SUCH_TABLE = 30;
+    public static final int CHAR_LENGTH_ERROR = 31;
     
     /* column 타입 */
     public static final int INT = 100;
