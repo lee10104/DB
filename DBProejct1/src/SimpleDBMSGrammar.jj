@@ -438,37 +438,78 @@ int tableConstraintDefinition(Table t) : { ArrayList<String> pkcl; ArrayList<Col
   }
 }
 
-void insertColumnsAndSource() : {}
+ArrayList<Value> insertColumnsAndSource() : { ArrayList<String> cnl = null; ArrayList<Value> vl; }
 {
   (
-    columnNameList()
+    cnl = columnNameList()
   )?
-  valueList()
+  vl = valueList()
+  {
+    if (cnl != null) {
+      if (cnl.size() == vl.size()) {
+        for (int i = 0; i < cnl.size(); i++) {
+          vl.get(i).setColumnName(cnl.get(i));
+        }
+      } else {
+        // InsertTypeMismatchError
+      }
+    }
+    return vl;
+  }
 }
 
-void valueList() : {}
+ArrayList<Value> valueList() : { Value v; }
 {
+  {
+    ArrayList<Value> vl = new ArrayList<Value>();
+  }
   < VALUES >
   < LEFT_PAREN >
-  value()
+  v = value()
+  {
+    vl.add(v);
+  }
   (
     < COMMA >
-    value()
+    v = value()
+    {
+      vl.add(v);
+    }
   )*
   < RIGHT_PAREN >
+  {
+    return vl;
+  }
 }
 
-void value() : {}
+Value value() : { Value v = null; }
 {
-  < NULL >
-| comparableValue()
+  (
+    < NULL >
+  | v = comparableValue()
+  )
+  {
+    return v;
+  }
 }
 
-void comparableValue() : {}
+Value comparableValue() : { int iv; String sv; String dv; }
 {
   < INT_VALUE >
+   {
+     iv = Integer.parseInt(token.image);
+     return new Value(new DataType(Flags.INT, 0), Integer.toString(iv));
+   }
 | < CHAR_STRING >
+  {
+    sv = token.image.toLowerCase();
+    return new Value(new DataType(Flags.CHAR, 0), sv);
+  }
 | < DATE_VALUE >
+  {
+    dv = token.image.toLowerCase();
+    return new Value(new DataType(Flags.DATE, 0), dv);
+  }
 }
 
 void tableExpression() : {}

@@ -485,22 +485,37 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  static final public void insertColumnsAndSource() throws ParseException {
+  static final public ArrayList<Value> insertColumnsAndSource() throws ParseException {
+                                              ArrayList<String> cnl = null; ArrayList<Value> vl;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case LEFT_PAREN:
-      columnNameList();
+      cnl = columnNameList();
       break;
     default:
       jj_la1[16] = jj_gen;
       ;
     }
-    valueList();
+    vl = valueList();
+    if (cnl != null) {
+      if (cnl.size() == vl.size()) {
+        for (int i = 0; i < cnl.size(); i++) {
+          vl.get(i).setColumnName(cnl.get(i));
+        }
+      } else {
+        // InsertTypeMismatchError
+      }
+    }
+    {if (true) return vl;}
+    throw new Error("Missing return statement in function");
   }
 
-  static final public void valueList() throws ParseException {
+  static final public ArrayList<Value> valueList() throws ParseException {
+                                 Value v;
+    ArrayList<Value> vl = new ArrayList<Value>();
     jj_consume_token(VALUES);
     jj_consume_token(LEFT_PAREN);
-    value();
+    v = value();
+    vl.add(v);
     label_5:
     while (true) {
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
@@ -512,12 +527,16 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
         break label_5;
       }
       jj_consume_token(COMMA);
-      value();
+      v = value();
+      vl.add(v);
     }
     jj_consume_token(RIGHT_PAREN);
+    {if (true) return vl;}
+    throw new Error("Missing return statement in function");
   }
 
-  static final public void value() throws ParseException {
+  static final public Value value() throws ParseException {
+                  Value v = null;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case NULL:
       jj_consume_token(NULL);
@@ -525,31 +544,41 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     case INT_VALUE:
     case DATE_VALUE:
     case CHAR_STRING:
-      comparableValue();
+      v = comparableValue();
       break;
     default:
       jj_la1[18] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
+    {if (true) return v;}
+    throw new Error("Missing return statement in function");
   }
 
-  static final public void comparableValue() throws ParseException {
+  static final public Value comparableValue() throws ParseException {
+                            int iv; String sv; String dv;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case INT_VALUE:
       jj_consume_token(INT_VALUE);
+     iv = Integer.parseInt(token.image);
+     {if (true) return new Value(new DataType(Flags.INT, 0), Integer.toString(iv));}
       break;
     case CHAR_STRING:
       jj_consume_token(CHAR_STRING);
+    sv = token.image.toLowerCase();
+    {if (true) return new Value(new DataType(Flags.CHAR, 0), sv);}
       break;
     case DATE_VALUE:
       jj_consume_token(DATE_VALUE);
+    dv = token.image.toLowerCase();
+    {if (true) return new Value(new DataType(Flags.DATE, 0), dv);}
       break;
     default:
       jj_la1[19] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
+    throw new Error("Missing return statement in function");
   }
 
   static final public void tableExpression() throws ParseException {
@@ -794,9 +823,26 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     finally { jj_save(4, xla); }
   }
 
-  static private boolean jj_3_5() {
-    if (jj_3R_8()) return true;
-    if (jj_scan_token(PERIOD)) return true;
+  static private boolean jj_3R_8() {
+    if (jj_scan_token(LEGAL_IDENTIFIER)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_15() {
+    if (jj_scan_token(INT_VALUE)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_13() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_15()) {
+    jj_scanpos = xsp;
+    if (jj_3R_16()) {
+    jj_scanpos = xsp;
+    if (jj_3R_17()) return true;
+    }
+    }
     return false;
   }
 
@@ -805,27 +851,15 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     return false;
   }
 
-  static private boolean jj_3R_13() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_scan_token(31)) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(33)) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(32)) return true;
-    }
-    }
+  static private boolean jj_3_5() {
+    if (jj_3R_8()) return true;
+    if (jj_scan_token(PERIOD)) return true;
     return false;
   }
 
   static private boolean jj_3_3() {
     if (jj_3R_8()) return true;
     if (jj_scan_token(PERIOD)) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_14() {
-    if (jj_scan_token(LEGAL_IDENTIFIER)) return true;
     return false;
   }
 
@@ -852,14 +886,24 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     return false;
   }
 
+  static private boolean jj_3R_17() {
+    if (jj_scan_token(DATE_VALUE)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_14() {
+    if (jj_scan_token(LEGAL_IDENTIFIER)) return true;
+    return false;
+  }
+
   static private boolean jj_3_4() {
     if (jj_3R_8()) return true;
     if (jj_scan_token(PERIOD)) return true;
     return false;
   }
 
-  static private boolean jj_3R_8() {
-    if (jj_scan_token(LEGAL_IDENTIFIER)) return true;
+  static private boolean jj_3R_16() {
+    if (jj_scan_token(CHAR_STRING)) return true;
     return false;
   }
 
