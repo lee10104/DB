@@ -3,12 +3,14 @@ package db;
 // import
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.io.UnsupportedEncodingException;
 
 import com.sleepycat.je.*;
 
 public class SimpleDBMS {
     String T = "__TABLE__";
+    String R = "__RECORDS";
     // Environment & Database 정의
     Environment simpleDbEnv = null;
     Database simpleDb = null;
@@ -309,5 +311,69 @@ public class SimpleDBMS {
         }
 
         return c;
+    }
+    
+    public void insertValues(String tn, ArrayList<Value> vl) {
+        Table t = getTable(tn);
+        
+        if (t == null) {
+            throw new ErrorException(Flags.NO_SUCH_TABLE);
+        }
+        
+        ArrayList<Column> cl = t.getColumns();
+        
+        if (cl.size() != vl.size()) {
+            throw new ErrorException(Flags.INSERT_TYPE_MISMATCH_ERROR);
+        }
+        
+        // insert하려는 column이 유효한지 검사하고 value를 record list로 만듦
+        for (int i = 0; i < vl.size(); i++) {
+            Value v = vl.get(i);
+            
+            if (v.getColumnName() == null) {
+                v.setColumn(cl.get(i));
+            } else {
+                for (Column c: cl) {
+                    if (v.getColumnName().equals(c.getName())) {
+                        v.setColumn(c);
+                        break;
+                    }
+                }
+            }
+            if (v.getColumnName() != null && v.getColumn() == null) {
+                throw new ErrorException(Flags.INSERT_COLUMN_EXISTENCE_ERROR, v.getColumnName());
+            }
+            if (v.getDataType().getType() != v.getColumn().getDataType().getType()) {
+                throw new ErrorException(Flags.INSERT_TYPE_MISMATCH_ERROR);
+            }
+        }
+        for (Column c: cl) {
+            for (Value v: vl) {
+                if (c.getName().equals(v.getColumnName())) {
+                    String value = v.getValue();
+                    if (c.getDataType().getType() == Flags.CHAR) {
+                        value = value.substring(0, c.getDataType().getCharLength());
+                    }
+                    t.addRecord(value);
+                    break;
+                }
+            }
+        }
+
+        // db에 저장
+        Cursor cursor = simpleDb.openCursor(null, null);
+        DatabaseEntry key, data;
+        
+        try {
+            String entry = tn + R;
+            String record = String.join("\t", t.getRecords());
+            key = new DatabaseEntry(entry.getBytes("UTF-8"));
+            data = new DatabaseEntry(record.getBytes("UTF-8"));
+            cursor.put(key, data);
+            
+            cursor.close();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -192,19 +192,18 @@ PrintMessages descQuery() : { String tn; }
       throw new ErrorException(Flags.NO_SUCH_TABLE);
     }
     dbms.printTable(tn);
-
     return new PrintMessages(Flags.DESC_DONE);
   }
 }
 
-PrintMessages insertQuery() : { String tn; }
+PrintMessages insertQuery() : { String tn; ArrayList<Value> vl; }
 {
   < INSERT >
   tn = tableName()
-  insertColumnsAndSource()
-
+  vl = insertColumnsAndSource()
   {
-    return new PrintMessages(Flags.NOTHING);
+    dbms.insertValues(tn, vl);
+    return new PrintMessages(Flags.INSERT_DONE);
   }
 }
 
@@ -215,7 +214,6 @@ PrintMessages deleteQuery() : { String tn; }
   (
     whereClause()
   )?
-  
   {
     return new PrintMessages(Flags.NOTHING);
   }
@@ -226,7 +224,6 @@ PrintMessages selectQuery() : {}
   < SELECT >
   selectList()
   tableExpression()
-
   {
     return new PrintMessages(Flags.NOTHING);
   }
@@ -451,7 +448,7 @@ ArrayList<Value> insertColumnsAndSource() : { ArrayList<String> cnl = null; Arra
           vl.get(i).setColumnName(cnl.get(i));
         }
       } else {
-        // InsertTypeMismatchError
+        throw new ErrorException(Flags.INSERT_TYPE_MISMATCH_ERROR);
       }
     }
     return vl;

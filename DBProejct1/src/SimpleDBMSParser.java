@@ -163,17 +163,17 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
       {if (true) throw new ErrorException(Flags.NO_SUCH_TABLE);}
     }
     dbms.printTable(tn);
-
     {if (true) return new PrintMessages(Flags.DESC_DONE);}
     throw new Error("Missing return statement in function");
   }
 
   static final public PrintMessages insertQuery() throws ParseException {
-                                String tn;
+                                String tn; ArrayList<Value> vl;
     jj_consume_token(INSERT);
     tn = tableName();
-    insertColumnsAndSource();
-    {if (true) return new PrintMessages(Flags.NOTHING);}
+    vl = insertColumnsAndSource();
+    dbms.insertValues(tn, vl);
+    {if (true) return new PrintMessages(Flags.INSERT_DONE);}
     throw new Error("Missing return statement in function");
   }
 
@@ -502,7 +502,7 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
           vl.get(i).setColumnName(cnl.get(i));
         }
       } else {
-        // InsertTypeMismatchError
+        {if (true) throw new ErrorException(Flags.INSERT_TYPE_MISMATCH_ERROR);}
       }
     }
     {if (true) return vl;}
@@ -823,6 +823,24 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
     finally { jj_save(4, xla); }
   }
 
+  static private boolean jj_3R_16() {
+    if (jj_scan_token(CHAR_STRING)) return true;
+    return false;
+  }
+
+  static private boolean jj_3_1() {
+    if (jj_scan_token(AS)) return true;
+    if (jj_3R_8()) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_9() {
+    if (jj_3R_10()) return true;
+    if (jj_scan_token(COMP_OP)) return true;
+    if (jj_3R_10()) return true;
+    return false;
+  }
+
   static private boolean jj_3R_8() {
     if (jj_scan_token(LEGAL_IDENTIFIER)) return true;
     return false;
@@ -899,24 +917,6 @@ public class SimpleDBMSParser implements SimpleDBMSParserConstants {
   static private boolean jj_3_4() {
     if (jj_3R_8()) return true;
     if (jj_scan_token(PERIOD)) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_16() {
-    if (jj_scan_token(CHAR_STRING)) return true;
-    return false;
-  }
-
-  static private boolean jj_3_1() {
-    if (jj_scan_token(AS)) return true;
-    if (jj_3R_8()) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_9() {
-    if (jj_3R_10()) return true;
-    if (jj_scan_token(COMP_OP)) return true;
-    if (jj_3R_10()) return true;
     return false;
   }
 
