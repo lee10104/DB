@@ -33,6 +33,10 @@ public class Column implements Serializable{
         this.isNull = isNull;
     }
     
+    public boolean getIsNull() {
+        return isNull;
+    }
+    
     public void setIsPrimaryKey(boolean isPrimaryKey) {
         this.isPrimaryKey = isPrimaryKey;
     }

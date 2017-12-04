@@ -167,15 +167,11 @@ public class SimpleDBMS {
         Table t = new Table(tn);
         
         try {
-            DatabaseEntry key = new DatabaseEntry(tn.getBytes("UTF-8"));                   
-
+            // column 정보 읽어오기
+            DatabaseEntry key = new DatabaseEntry(tn.getBytes("UTF-8"));
             DatabaseEntry column = new DatabaseEntry();
             cursor.getSearchKey(key, column, LockMode.DEFAULT);
             do {
-                if (column == null) {
-                    throw new ErrorException(Flags.NOTHING);
-                }
-                
                 try {
                     String cs = new String(column.getData(), "UTF-8");
                     Column c = stringToColumn(cs);
@@ -184,7 +180,25 @@ public class SimpleDBMS {
                     e.printStackTrace();
                     break;
                 }
+                
             } while (cursor.getNextDup(key, column, LockMode.DEFAULT) == OperationStatus.SUCCESS);
+            
+            // record 읽어오기
+            String entry = tn + R;
+            DatabaseEntry recordKey = new DatabaseEntry(entry.getBytes("UTF-8"));
+            DatabaseEntry foundRecord = new DatabaseEntry();
+            
+            cursor = simpleDb.openCursor(null, null);
+            do {
+                String value = new String(foundRecord.getData(), "UTF-8");
+                for (String s1: value.split("\t\t")) {
+                    Record record = new Record();
+                    for (String s2: value.split("\t")) {
+                        record.addValue(s2);
+                    }
+                    t.addRecord(record);
+                }
+            } while (cursor.getNextDup(recordKey, foundRecord, LockMode.DEFAULT) == OperationStatus.SUCCESS);
             
             cursor.close();
         } catch (UnsupportedEncodingException e) {
@@ -326,7 +340,7 @@ public class SimpleDBMS {
             throw new ErrorException(Flags.INSERT_TYPE_MISMATCH_ERROR);
         }
         
-        // insert하려는 column이 유효한지 검사하고 value를 record list로 만듦
+        // insert하려는 column이 유효한지 검사하고 value를 record list로 만들어 table에 저장
         for (int i = 0; i < vl.size(); i++) {
             Value v = vl.get(i);
             
@@ -340,8 +354,11 @@ public class SimpleDBMS {
                     }
                 }
             }
-            if (v.getColumnName() != null && v.getColumn() == null) {
+            if (v.getColumn() == null) {
                 throw new ErrorException(Flags.INSERT_COLUMN_EXISTENCE_ERROR, v.getColumnName());
+            }
+            if (v.getValue() == null && !v.getColumn().getIsNull()) {
+                throw new ErrorException(Flags.INSERT_COLUMN_NON_NULLABLE_ERROR, v.getColumnName());
             }
             if (v.getDataType().getType() != v.getColumn().getDataType().getType()) {
                 throw new ErrorException(Flags.INSERT_TYPE_MISMATCH_ERROR);
@@ -349,14 +366,16 @@ public class SimpleDBMS {
         }
         for (Column c: cl) {
             for (Value v: vl) {
+                Record record = new Record();
                 if (c.getName().equals(v.getColumnName())) {
                     String value = v.getValue();
                     if (c.getDataType().getType() == Flags.CHAR) {
                         value = value.substring(0, c.getDataType().getCharLength());
                     }
-                    t.addRecord(value);
+                    record.addValue(value);
                     break;
                 }
+                t.addRecord(record);
             }
         }
 
@@ -366,9 +385,8 @@ public class SimpleDBMS {
         
         try {
             String entry = tn + R;
-            String record = String.join("\t", t.getRecords());
             key = new DatabaseEntry(entry.getBytes("UTF-8"));
-            data = new DatabaseEntry(record.getBytes("UTF-8"));
+            data = new DatabaseEntry(t.recordsToString().getBytes("UTF-8"));
             cursor.put(key, data);
             
             cursor.close();

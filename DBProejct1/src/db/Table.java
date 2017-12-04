@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public class Table {
     private String tableName;
     private ArrayList<Column> columns;
-    private ArrayList<String> records;
+    private ArrayList<Record> records;
 
     public Table(String tableName) {
         this.tableName = tableName;
@@ -23,11 +23,23 @@ public class Table {
         return columns;
     }
     
-    public void addRecord(String str) {
-        records.add(str);
+    public void addRecord(Record record) {
+        records.add(record);
     }
     
-    public ArrayList<String> getRecords() {
+    public void removeRecord(Record record) {
+        records.remove(record);
+    }
+    
+    public ArrayList<Record> getRecords() {
         return records;
+    }
+    
+    public String recordsToString() {
+        ArrayList<String> recordStringList = new ArrayList<String>();
+        for (Record r: records) {
+            recordStringList.add(r.toString());
+        }
+        return String.join("\t\t", recordStringList);
     }
 }
