@@ -193,7 +193,7 @@ public class SimpleDBMS {
                 String value = new String(foundRecord.getData(), "UTF-8");
                 for (String s1: value.split("\t\t")) {
                     Record record = new Record();
-                    for (String s2: value.split("\t")) {
+                    for (String s2: s1.split("\t")) {
                         record.addValue(s2);
                     }
                     t.addRecord(record);
@@ -246,6 +246,101 @@ public class SimpleDBMS {
             System.out.println(t.getName());
         }
         PrintMessages.printLine();
+    }
+    
+    public void insertValues(String tn, ArrayList<Value> vl) {
+        Table t = getTable(tn);
+        
+        if (t == null) {
+            throw new ErrorException(Flags.NO_SUCH_TABLE);
+        }
+        
+        ArrayList<Column> cl = t.getColumns();
+        
+        if (cl.size() != vl.size()) {
+            throw new ErrorException(Flags.INSERT_TYPE_MISMATCH_ERROR);
+        }
+        
+        // insert하려는 column이 유효한지 검사하고 value를 record list로 만들어 table에 저장
+        for (int i = 0; i < vl.size(); i++) {
+            Value v = vl.get(i);
+            
+            if (v.getColumnName() == null) {
+                v.setColumn(cl.get(i));
+            } else {
+                for (Column c: cl) {
+                    if (v.getColumnName().equals(c.getName())) {
+                        v.setColumn(c);
+                        break;
+                    }
+                }
+            }
+            if (v.getColumn() == null) {
+                throw new ErrorException(Flags.INSERT_COLUMN_EXISTENCE_ERROR, v.getColumnName());
+            }
+            if (v.getValue() == null && !v.getColumn().getIsNull()) {
+                throw new ErrorException(Flags.INSERT_COLUMN_NON_NULLABLE_ERROR, v.getColumnName());
+            }
+            if (v.getDataType().getType() != v.getColumn().getDataType().getType()) {
+                throw new ErrorException(Flags.INSERT_TYPE_MISMATCH_ERROR);
+            }
+        }
+        // primary key 조사
+        boolean[] isPk = new boolean[cl.size()];
+        for (int i = 0; i < cl.size(); i++) {
+            if (cl.get(i).getIsPrimaryKey()) {
+                isPk[i] = true;
+            } else {
+                isPk[i] = false;
+            }
+        }
+        
+        // record 생성
+        Record newRecord = new Record();
+        for (Column c: cl) {
+            for (Value v: vl) {
+                if (c.getName().equals(v.getColumnName())) {
+                    String value = v.getValue();
+                    if (c.getDataType().getType() == Flags.CHAR) {
+                        value = value.substring(0, c.getDataType().getCharLength());
+                    }
+                    newRecord.addValue(value);
+                    break;
+                }
+            }
+        }        
+        // record가 primary key 조건에 부합하는지 검사
+        for (Record record: t.getRecords()) {
+            boolean flag = true;
+            for (int i = 0; i < cl.size(); i++) {
+                if (isPk[i]) {
+                    if (!newRecord.getValues().get(i).equals(record.getValues().get(i))) {
+                        flag = false;
+                    }
+                }
+            }
+            if (flag) {
+                throw new ErrorException(Flags.INSERT_DUPLICATE_PRIMARY_KEY_ERROR);
+            }
+        }
+        
+        // table에 record 추가
+        t.addRecord(newRecord);
+
+        // db에 저장
+        Cursor cursor = simpleDb.openCursor(null, null);
+        DatabaseEntry key, data;
+        
+        try {
+            String entry = tn + R;
+            key = new DatabaseEntry(entry.getBytes("UTF-8"));
+            data = new DatabaseEntry(t.recordsToString().getBytes("UTF-8"));
+            cursor.put(key, data);
+            
+            cursor.close();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
     }
     
     public String compareColumnLists(ArrayList<String> columnList1, ArrayList<Column> columnList2) {
@@ -325,73 +420,5 @@ public class SimpleDBMS {
         }
 
         return c;
-    }
-    
-    public void insertValues(String tn, ArrayList<Value> vl) {
-        Table t = getTable(tn);
-        
-        if (t == null) {
-            throw new ErrorException(Flags.NO_SUCH_TABLE);
-        }
-        
-        ArrayList<Column> cl = t.getColumns();
-        
-        if (cl.size() != vl.size()) {
-            throw new ErrorException(Flags.INSERT_TYPE_MISMATCH_ERROR);
-        }
-        
-        // insert하려는 column이 유효한지 검사하고 value를 record list로 만들어 table에 저장
-        for (int i = 0; i < vl.size(); i++) {
-            Value v = vl.get(i);
-            
-            if (v.getColumnName() == null) {
-                v.setColumn(cl.get(i));
-            } else {
-                for (Column c: cl) {
-                    if (v.getColumnName().equals(c.getName())) {
-                        v.setColumn(c);
-                        break;
-                    }
-                }
-            }
-            if (v.getColumn() == null) {
-                throw new ErrorException(Flags.INSERT_COLUMN_EXISTENCE_ERROR, v.getColumnName());
-            }
-            if (v.getValue() == null && !v.getColumn().getIsNull()) {
-                throw new ErrorException(Flags.INSERT_COLUMN_NON_NULLABLE_ERROR, v.getColumnName());
-            }
-            if (v.getDataType().getType() != v.getColumn().getDataType().getType()) {
-                throw new ErrorException(Flags.INSERT_TYPE_MISMATCH_ERROR);
-            }
-        }
-        for (Column c: cl) {
-            for (Value v: vl) {
-                Record record = new Record();
-                if (c.getName().equals(v.getColumnName())) {
-                    String value = v.getValue();
-                    if (c.getDataType().getType() == Flags.CHAR) {
-                        value = value.substring(0, c.getDataType().getCharLength());
-                    }
-                    record.addValue(value);
-                    break;
-                }
-                t.addRecord(record);
-            }
-        }
-
-        // db에 저장
-        Cursor cursor = simpleDb.openCursor(null, null);
-        DatabaseEntry key, data;
-        
-        try {
-            String entry = tn + R;
-            key = new DatabaseEntry(entry.getBytes("UTF-8"));
-            data = new DatabaseEntry(t.recordsToString().getBytes("UTF-8"));
-            cursor.put(key, data);
-            
-            cursor.close();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
     }
 }
