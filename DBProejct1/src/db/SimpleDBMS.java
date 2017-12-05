@@ -285,13 +285,19 @@ public class SimpleDBMS {
                 throw new ErrorException(Flags.INSERT_TYPE_MISMATCH_ERROR);
             }
         }
-        // primary key 조사
+        // primary key, foreign key 조사
         boolean[] isPk = new boolean[cl.size()];
+        boolean[] isFk = new boolean[cl.size()];
         for (int i = 0; i < cl.size(); i++) {
             if (cl.get(i).getIsPrimaryKey()) {
                 isPk[i] = true;
             } else {
                 isPk[i] = false;
+            }
+            if (cl.get(i).getIsForeignKey()) {
+                isFk[i] = true;
+            } else {
+                isFk[i] = false;
             }
         }
         
@@ -321,6 +327,19 @@ public class SimpleDBMS {
             }
             if (flag) {
                 throw new ErrorException(Flags.INSERT_DUPLICATE_PRIMARY_KEY_ERROR);
+            }
+        }
+        // record가 foreign key 조건에 부합하는지 검사
+        for (Value v: vl) {
+            boolean flag = false;
+            Column c = v.getColumn();
+            for (String s: c.getReferencedTable().getColumnValues(c.getReferencedColumn())) {
+                if (s.equals(v.getValue())) {
+                    flag = true;
+                }
+            }
+            if (!flag) {
+                throw new ErrorException(Flags.INSERT_REFERENTIAL_INTEGRITY_ERROR);
             }
         }
         
