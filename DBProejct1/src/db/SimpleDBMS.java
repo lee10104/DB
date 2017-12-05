@@ -11,6 +11,7 @@ import com.sleepycat.je.*;
 public class SimpleDBMS {
     String T = "__TABLE__";
     String R = "__RECORDS";
+    String N = "__NULL__";
     // Environment & Database 정의
     Environment simpleDbEnv = null;
     Database simpleDb = null;
@@ -309,6 +310,9 @@ public class SimpleDBMS {
                     String value = v.getValue();
                     if (c.getDataType().getType() == Flags.CHAR) {
                         value = value.substring(0, c.getDataType().getCharLength());
+                    }
+                    if (value == null) {
+                        value = N;
                     }
                     newRecord.addValue(value);
                     break;
