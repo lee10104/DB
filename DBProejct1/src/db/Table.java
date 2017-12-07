@@ -35,6 +35,20 @@ public class Table {
         return records;
     }
     
+    public ArrayList<Value> getColumnValues(Column column) {
+        for (int i = 0; i < columns.size(); i++) {
+            if (columns.get(i).equals(column)) {
+                ArrayList<Value> vl = new ArrayList<Value>();
+                for (Record r: records) {
+                    vl.add(r.getValues().get(i));
+                }
+                return vl;
+            }
+        }
+        
+        return null;
+    }
+    
     public String recordsToString() {
         ArrayList<String> recordStringList = new ArrayList<String>();
         for (Record r: records) {
