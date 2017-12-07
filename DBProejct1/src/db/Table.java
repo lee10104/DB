@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public class Table {
     private String tableName;
     private ArrayList<Column> columns;
-    private ArrayList<Record> records;
+    private ArrayList<Record> records = new ArrayList<Record>();
 
     public Table(String tableName) {
         this.tableName = tableName;
@@ -50,7 +50,7 @@ public class Table {
     
     public ArrayList<Value> getColumnValues(Column column) {
         for (int i = 0; i < columns.size(); i++) {
-            if (columns.get(i).equals(column)) {
+            if (columns.get(i).equals(column)) { 
                 ArrayList<Value> vl = new ArrayList<Value>();
                 for (Record r: records) {
                     vl.add(r.getValues().get(i));
@@ -62,10 +62,30 @@ public class Table {
         return null;
     }
     
+    public ArrayList<Value> getColumnValues(String columnName) {
+        Column column = null;
+        
+        for (Column c: columns) {
+            if (c.getName().equals(columnName)) {
+                column = c;
+            }
+        }
+        
+        if (column == null) {
+            return null;
+        } else {
+            return getColumnValues(column);
+        }
+    }
+    
+    public int getRecordLength() {
+        return records.size();
+    }
+    
     public String recordsToString() {
         ArrayList<String> recordStringList = new ArrayList<String>();
         for (Record r: records) {
-            recordStringList.add(r.toString());
+            recordStringList.add(r.valueListToString());
         }
         return String.join("\t\t", recordStringList);
     }

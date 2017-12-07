@@ -37,4 +37,12 @@ public class Item {
         this.table = table;
         this.column = column;
     }
+    
+    public Table getTable() {
+        return table;
+    }
+    
+    public Column getColumn() {
+        return column;
+    }
 }

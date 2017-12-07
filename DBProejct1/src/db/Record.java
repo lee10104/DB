@@ -3,7 +3,7 @@ package db;
 import java.util.ArrayList;
 
 public class Record {
-    private ArrayList<Value> values;
+    private ArrayList<Value> values = new ArrayList<Value>();
     private int size = 0;
     
     public void addValue(Value value) {

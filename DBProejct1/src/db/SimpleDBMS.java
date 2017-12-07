@@ -138,6 +138,25 @@ public class SimpleDBMS {
                     } catch (UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }
+                    
+                    newCursor = simpleDb.openCursor(null, null);
+                    try {
+                        String entry = tn + R;
+                        DatabaseEntry recordKey = new DatabaseEntry(entry.getBytes("UTF-8"));
+                        DatabaseEntry recordName = new DatabaseEntry();
+                        newCursor.getSearchKey(recordKey, recordName, LockMode.DEFAULT);
+                        do {
+                            if (recordName.getData() == null) {
+                                break;
+                            }
+                            newCursor.delete();
+                        } while (newCursor.getNextDup(recordKey, recordName, LockMode.DEFAULT) == OperationStatus.SUCCESS);
+                        
+                        newCursor.close();
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                    
                     break;
                 }
 
@@ -185,15 +204,16 @@ public class SimpleDBMS {
                 
             } while (cursor.getNextDup(key, column, LockMode.DEFAULT) == OperationStatus.SUCCESS);
             
-            cursor.close();
-            
             // record 읽어오기
             String entry = tn + R;
             DatabaseEntry recordKey = new DatabaseEntry(entry.getBytes("UTF-8"));
             DatabaseEntry foundRecord = new DatabaseEntry();
-            
-            cursor = simpleDb.openCursor(null, null);
+            cursor.getSearchKey(recordKey, foundRecord, LockMode.DEFAULT);
+
             do {
+                if (foundRecord.getData() == null) {
+                    break;
+                }
                 String value = new String(foundRecord.getData(), "UTF-8");
                 for (String s1: value.split("\t\t")) {
                     Record record = new Record();
@@ -312,12 +332,14 @@ public class SimpleDBMS {
         Record newRecord = new Record();
         for (Column c: cl) {
             for (Value v: vl) {
-                if (c.getName().equals(v.getColumnName())) {
+                if (c.getName().equals(v.getColumn().getName())) {
                     String value = v.getValue();
                     DataType dt = c.getDataType();
                     v.setDataType(dt);
                     if (dt.getType() == Flags.CHAR) {
-                        v.setValue(value.substring(0, dt.getCharLength()));
+                        if (dt.getCharLength() < value.length()) {
+                            v.setValue(value.substring(0, dt.getCharLength()));
+                        }
                     }
                     if (value == null) {
                         v.setValue(N);
@@ -329,11 +351,11 @@ public class SimpleDBMS {
         }        
         // record가 primary key 조건에 부합하는지 검사
         for (Record record: t.getRecords()) {
-            boolean flag = true;
+            boolean flag = false;
             for (int i = 0; i < cl.size(); i++) {
                 if (isPk[i]) {
-                    if (!newRecord.getValues().get(i).equals(record.getValues().get(i))) {
-                        flag = false;
+                    if (newRecord.getValues().get(i).getValue().equals(record.getValues().get(i).getValue())) {
+                        flag = true;
                     }
                 }
             }
@@ -345,29 +367,48 @@ public class SimpleDBMS {
         for (Value v: vl) {
             boolean flag = false;
             Column c = v.getColumn();
-            for (Value vv: c.getReferencedTable().getColumnValues(c.getReferencedColumn())) {
-                if (vv.equals(v)) {
-                    flag = true;
+            Table rT = c.getReferencedTable();
+            if (rT != null) {
+                for (Value vv: rT.getColumnValues(c.getReferencedColumn())) {
+                    if (vv.equals(v)) {
+                        flag = true;
+                    }   
                 }
+            } else {
+                flag = true;
             }
             if (!flag) {
                 throw new ErrorException(Flags.INSERT_REFERENTIAL_INTEGRITY_ERROR);
             }
         }
-        
+
         // table에 record 추가
         t.addRecord(newRecord);
 
         // db에 저장
         Cursor cursor = simpleDb.openCursor(null, null);
         DatabaseEntry key, data;
-        
+
         try {
             String entry = tn + R;
             key = new DatabaseEntry(entry.getBytes("UTF-8"));
+            data = new DatabaseEntry();
+            cursor.getSearchKey(key, data, LockMode.DEFAULT);
+            do {
+                if (data.getData() == null) {
+                    break;
+                }
+                if (t.getRecordLength() > 1) {
+                    cursor.delete();
+                }
+            } while (cursor.getNextDup(key, data, LockMode.DEFAULT) == OperationStatus.SUCCESS);
+            cursor.close();
+            
+            cursor = simpleDb.openCursor(null, null);
+            key = new DatabaseEntry(entry.getBytes("UTF-8"));
             data = new DatabaseEntry(t.recordsToString().getBytes("UTF-8"));
             cursor.put(key, data);
-            
+
             cursor.close();
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
@@ -375,8 +416,6 @@ public class SimpleDBMS {
     }
     
     public String deleteValues(String tn, BooleanValueExpression bve) {
-        Cursor cursor = simpleDb.openCursor(null, null);
-        
         ArrayList<Record> deletedRecords = new ArrayList<Record>();
 
         Table t = getTable(tn);
@@ -393,32 +432,76 @@ public class SimpleDBMS {
                 }
             }
         }
+        
+        Cursor cursor = simpleDb.openCursor(null, null);
        
         try {
-            String entry = tn + "R";
+            String entry = tn + R;
             DatabaseEntry recordKey = new DatabaseEntry(entry.getBytes("UTF-8"));
             DatabaseEntry recordData = new DatabaseEntry();
             
             // record 삭제
             cursor.getSearchKey(recordKey, recordData, LockMode.DEFAULT);
             do {
-                cursor.delete();
+                if (recordData != null) {
+                    cursor.delete();
+                }
             } while (cursor.getNextDup(recordKey, recordData, LockMode.DEFAULT) == OperationStatus.SUCCESS);
             
             cursor.close();
-            
+
             // record 재삽입
-            cursor = simpleDb.openCursor(null, null);
-            recordKey = new DatabaseEntry(entry.getBytes("UTF-8"));
-            recordData = new DatabaseEntry(t.recordsToString().getBytes("UTF-8"));
-            cursor.put(recordKey, recordData);
-            
-            cursor.close();
-        } catch (Exception e) {
+            if (t.getRecordLength() != 0) {
+                Cursor newCursor = simpleDb.openCursor(null, null);
+                recordKey = new DatabaseEntry(entry.getBytes("UTF-8"));
+                recordData = new DatabaseEntry(t.recordsToString().getBytes("UTF-8"));
+                newCursor.put(recordKey, recordData);
+
+                newCursor.close();
+            }
+        } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
         
         return Integer.toString(deletedRecords.size());
+    }
+    
+    public void selectValues(ArrayList<Item> il, TableExpression te) {
+        ArrayList<ArrayList<Value>> sl = new ArrayList<ArrayList<Value>>();
+        int len = 0;
+        
+        if (te.booleanValueExpression == null) {
+            if (il.size() == 0) {
+                for (Table t: te.tableList) {
+                    for (Column c: t.getColumns()) {
+                        Item i = new Item(t.getName(), c.getName());
+                        i.setColumnInfo(t, c);
+                        il.add(i);
+                    }
+                }
+            }
+            
+            for (Item i: il) {
+                len = i.getTable().getRecordLength();
+                sl.add(i.getTable().getColumnValues(i.getColumn()));
+            }
+        } else {
+            
+        }
+        
+        PrintMessages.printLine();
+        for (Item i: il) {
+            System.out.print("| " + i.getColumnName() + " ");
+        }
+        System.out.print("|\n");
+        for (int i = 0; i < len; i++) {
+            for (int j = 0; j < sl.size(); j++) {
+                Value v = sl.get(j).get(i);
+                System.out.print("| " + v.getValue() + "\t");
+            }
+            System.out.print("|\n");
+        }
+        PrintMessages.printLine();
     }
     
     public String compareColumnLists(ArrayList<String> columnList1, ArrayList<Column> columnList2) {
@@ -474,9 +557,9 @@ public class SimpleDBMS {
             if (arr[3].equals("PRI/FOR")) {
                 pk = true;
                 fk = true;
-            } else if (arr[4].equals("FOR")) {
+            } else if (arr[3].equals("FOR")) {
                 fk = true;
-            } else if (arr[4].equals("PRI")) {
+            } else if (arr[3].equals("PRI")) {
                 pk = true;
             }
         }
