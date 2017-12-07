@@ -12,6 +12,12 @@ public class Table {
         columns = new ArrayList<Column>();
     }
     
+    public Table(String newTableName, Table t) {
+        this.tableName = newTableName;
+        this.columns = t.getColumns();
+        this.records = t.getRecords();
+    }
+    
     public String getName() {
         return tableName;
     }
@@ -33,6 +39,13 @@ public class Table {
     
     public ArrayList<Record> getRecords() {
         return records;
+    }
+    
+    public int removeAllRecords() {
+        int count = records.size();
+        records = new ArrayList<Record>();
+        
+        return count;
     }
     
     public ArrayList<Value> getColumnValues(Column column) {

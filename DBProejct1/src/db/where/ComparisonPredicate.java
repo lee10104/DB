@@ -1,6 +1,6 @@
 package db.where;
 
-public class ComparisonPredicate {
+public class ComparisonPredicate implements Predicate {
     public static final int EQ = 0; // ==
     public static final int NE = 1; // !=
     public static final int GT = 2; // >
@@ -9,15 +9,24 @@ public class ComparisonPredicate {
     public static final int LE = 5; // <=
     
     private int compOp;
-    private CompOperand left;
-    private CompOperand right;
+    private Item left;
+    private Item right;
     
-    public void setType(int compOp) {
-        this.compOp = compOp;
-    }
-    
-    public void setCompOperand(CompOperand left, CompOperand right) {
+    public ComparisonPredicate(Item left, Item right, String compOp) {
         this.left = left;
         this.right = right;
+        if (compOp.equals("=")) {
+            this.compOp = EQ;
+        } else if (compOp.equals("!=")) {
+            this.compOp = NE;
+        } else if (compOp.equals(">")) {
+            this.compOp = GT;
+        } else if (compOp.equals(">=")) {
+            this.compOp = GE;
+        } else if (compOp.equals("<")) {
+            this.compOp = LT;
+        } else if (compOp.equals("<=")) {
+            this.compOp = LE;
+        }
     }
 }

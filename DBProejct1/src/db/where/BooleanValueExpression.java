@@ -1,5 +1,6 @@
 package db.where;
 
+import db.*;
 import java.util.ArrayList;
 
 public class BooleanValueExpression {
@@ -7,5 +8,9 @@ public class BooleanValueExpression {
     
     public void addBooleanTerm(BooleanTerm booleanTerm) {
         booleanTerms.add(booleanTerm);
+    }
+    
+    public boolean isTrue(Record r) {
+        return true;
     }
 }

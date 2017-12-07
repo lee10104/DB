@@ -8,6 +8,7 @@ options
 PARSER_BEGIN(SimpleDBMSParser)
 
 import db.*;
+import db.where.*;
 import java.util.*;
 
 public class SimpleDBMSParser
@@ -207,15 +208,16 @@ PrintMessages insertQuery() : { String tn; ArrayList<Value> vl; }
   }
 }
 
-PrintMessages deleteQuery() : { String tn; }
+PrintMessages deleteQuery() : { String tn; BooleanValueExpression bve = null; String count; }
 {
   < DELETE >
   tn = tableName()
   (
-    whereClause()
+    bve = whereClause()
   )?
   {
-    return new PrintMessages(Flags.NOTHING);
+    count = dbms.deleteValues(tn, bve);
+    return new PrintMessages(Flags.DELETE_DONE, count);
   }
 }
 
@@ -286,119 +288,218 @@ void columnDefinition(Table t) : { String cn; DataType dt; boolean isNull = true
   }
 }
 
-void whereClause() : {}
+BooleanValueExpression whereClause() : { BooleanValueExpression bve; }
 {
   < WHERE >
-  booleanValueExpression()
+  bve = booleanValueExpression()
+  {
+    return bve;
+  }
 }
 
-void fromClause() : {}
+ArrayList<Table> fromClause() : { ArrayList<Table> tl; }
 {
   < FROM >
-  tableReferenceList()
+  tl = tableReferenceList()
+  {
+    return tl;
+  }
 }
 
-void tableReferenceList() : {}
+ArrayList<Table> tableReferenceList() : { Table t; ArrayList<Table> tl; }
 {
-  referedTable()
+  {
+    tl = new ArrayList<Table>();
+  }
+  t = referedTable()
+  {
+    tl.add(t);
+  }
   (
     < COMMA >
-    referedTable()
+    t = referedTable()
+    {
+      tl.add(t);
+    }
   )?
+  {
+    return tl;
+  }
 }
 
-void referedTable() : {}
+Table referedTable() : { Table t; String tn; String newTn = null; }
 {
-  tableName()
+  tn = tableName()
   (
     LOOKAHEAD(4) // choice conflict 발생, LOOKAHEAD 사용
     < AS >
-    tableName()
+    newTn = tableName()
   )?
+  {
+    Table tt = dbms.getTable(tn);
+
+    if (tt == null) {
+      throw new ErrorException(Flags.NO_SUCH_TABLE);
+    }
+
+    if (newTn != null) {
+      t = new Table(newTn, tt);
+    } else {
+      t = tt;
+    }
+
+    return t;
+  }
 }
 
-void booleanValueExpression() : {}
+BooleanValueExpression booleanValueExpression() : { BooleanTerm bt; BooleanValueExpression bve; }
 {
-  booleanTerm()
+  {
+    bve = new BooleanValueExpression();
+  }
+  bt = booleanTerm()
+  {
+    bve.addBooleanTerm(bt);
+  }
   (
     < OR >
-    booleanTerm()
+    bt = booleanTerm()
+    {
+      bve.addBooleanTerm(bt);
+    }
   )*
+  {
+    return bve;
+  }
 }
 
-void booleanTerm() : {}
+BooleanTerm booleanTerm() : { BooleanFactor bf; BooleanTerm bt; }
 {
-  booleanFactor()
+  {
+    bt = new BooleanTerm();
+  }
+  bf = booleanFactor()
+  {
+    bt.addBooleanFactor(bf);
+  }
   (
     < AND >
     booleanFactor()
+    {
+      bt.addBooleanFactor(bf);
+    }
   )*
+  {
+    return bt;
+  }
 }
 
-void booleanFactor() : {}
+BooleanFactor booleanFactor() : { BooleanTest bt; boolean isNot = true; }
 {
   (
     < NOT >
+    {
+      isNot = false;
+    }
   )?
-  booleanTest()
+  bt = booleanTest()
+  {
+    return new BooleanFactor(bt, isNot);
+  }
 }
 
-void booleanTest() : {}
+BooleanTest booleanTest() : { Predicate p; BooleanValueExpression bve; }
 {
-  predicate()
-| parenthesizedBooleanExpression()
+  p = predicate()
+  {
+    return new BooleanTest(p);
+  }
+| bve = parenthesizedBooleanExpression()
+  {
+    return new BooleanTest(bve);
+  }
 }
 
-void predicate() : {}
+Predicate predicate() : { ComparisonPredicate cp; NullPredicate np; }
 {
   LOOKAHEAD(4) // choice conflict 발생, LOOKAHEAD 사용
-  comparisonPredicate()
-| nullPredicate()
+  cp = comparisonPredicate()
+  {
+    return cp;
+  }
+| np = nullPredicate()
+  {
+    return np;
+  }
 }
 
-void comparisonPredicate() : {}
+ComparisonPredicate comparisonPredicate() : { Item left; Item right; String compOp; }
 {
-  compOperand()
+  left = compOperand()
   < COMP_OP >
-  compOperand()
+  {
+    compOp = token.image;
+  }
+  right = compOperand()
+  {
+    return new ComparisonPredicate(left, right, compOp);
+  }
 }
 
-void compOperand() : {}
+Item compOperand() : { Value v; String tn = null; String cn; }
 {
-  comparableValue()
+  v = comparableValue()
+  {
+    return new Item(v);
+  }
 | (
     LOOKAHEAD(4) // choice conflict 발생, LOOKAHEAD 사용
-    tableName()
+    tn = tableName()
     < PERIOD >
   )?
-  columnName()
+  cn = columnName()
+  {
+    return new Item(tn, cn);
+  }
 }
 
-void parenthesizedBooleanExpression() : {}
+BooleanValueExpression parenthesizedBooleanExpression() : { BooleanValueExpression bve; }
 {
   < LEFT_PAREN >
-  booleanValueExpression()
+  bve = booleanValueExpression()
   < RIGHT_PAREN >
+  {
+    return bve;
+  }
 }
 
-void nullPredicate() : {}
+NullPredicate nullPredicate() : { String tn = null; String cn; boolean isNull; }
 {
   (
     LOOKAHEAD(4) // choice conflict 발생, LOOKAHEAD 사용
-    tableName()
+    tn = tableName()
     < PERIOD >
   )?
-  columnName()
-  nullOperation()
+  cn = columnName()
+  isNull = nullOperation()
+  {
+    return new NullPredicate(new Item(tn, cn), isNull);
+  }
 }
 
-void nullOperation(): {}
+boolean nullOperation(): { boolean isNull = true; }
 {
   < IS >
   (
     < NOT >
+    {
+      isNull = false;
+    }
   )?
   < NULL >
+  {
+    return isNull;
+  }
 }
 
 int tableConstraintDefinition(Table t) : { ArrayList<String> pkcl; ArrayList<Column> cl; }
@@ -509,11 +610,11 @@ Value comparableValue() : { int iv; String sv; String dv; }
   }
 }
 
-void tableExpression() : {}
+void tableExpression() : { ArrayList<Table> tl; BooleanValueExpression bve = null; }
 {
-  fromClause()
+  tl = fromClause()
   (
-    whereClause()
+    bve = whereClause()
   )?
 }
 

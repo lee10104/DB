@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.io.UnsupportedEncodingException;
 
 import com.sleepycat.je.*;
+import db.where.*;
 
 public class SimpleDBMS {
     String T = "__TABLE__";
@@ -183,6 +184,8 @@ public class SimpleDBMS {
                 }
                 
             } while (cursor.getNextDup(key, column, LockMode.DEFAULT) == OperationStatus.SUCCESS);
+            
+            cursor.close();
             
             // record 읽어오기
             String entry = tn + R;
@@ -369,6 +372,53 @@ public class SimpleDBMS {
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
+    }
+    
+    public String deleteValues(String tn, BooleanValueExpression bve) {
+        Cursor cursor = simpleDb.openCursor(null, null);
+        
+        ArrayList<Record> deletedRecords = new ArrayList<Record>();
+
+        Table t = getTable(tn);
+        
+        if (bve == null) {
+            deletedRecords = t.getRecords();
+            t.removeAllRecords();
+            
+        } else {
+            for (Record r: t.getRecords()) {
+                if (bve.isTrue(r)) {
+                    deletedRecords.add(r);
+                    t.removeRecord(r);
+                }
+            }
+        }
+       
+        try {
+            String entry = tn + "R";
+            DatabaseEntry recordKey = new DatabaseEntry(entry.getBytes("UTF-8"));
+            DatabaseEntry recordData = new DatabaseEntry();
+            
+            // record 삭제
+            cursor.getSearchKey(recordKey, recordData, LockMode.DEFAULT);
+            do {
+                cursor.delete();
+            } while (cursor.getNextDup(recordKey, recordData, LockMode.DEFAULT) == OperationStatus.SUCCESS);
+            
+            cursor.close();
+            
+            // record 재삽입
+            cursor = simpleDb.openCursor(null, null);
+            recordKey = new DatabaseEntry(entry.getBytes("UTF-8"));
+            recordData = new DatabaseEntry(t.recordsToString().getBytes("UTF-8"));
+            cursor.put(recordKey, recordData);
+            
+            cursor.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        return Integer.toString(deletedRecords.size());
     }
     
     public String compareColumnLists(ArrayList<String> columnList1, ArrayList<Column> columnList2) {

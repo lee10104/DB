@@ -1,14 +1,11 @@
 package db.where;
 
 public class NullPredicate implements Predicate {
-    private boolean isNull;
     private Item item;
+    private boolean isNull;
     
-    public void setIsNull(boolean isNull) {
-        this.isNull = isNull;
-    }
-    
-    public void setItem(Item item) {
+    public NullPredicate(Item item, boolean isNull) {
         this.item = item;
+        this.isNull = isNull;
     }
 }
