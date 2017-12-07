@@ -3,15 +3,15 @@ package db;
 import java.util.ArrayList;
 
 public class Record {
-    private ArrayList<String> values;
+    private ArrayList<Value> values;
     private int size = 0;
     
-    public void addValue(String value) {
+    public void addValue(Value value) {
         values.add(value);
         size++;
     }
 
-    public ArrayList<String> getValues() {
+    public ArrayList<Value> getValues() {
         return values;
     }
     
@@ -20,6 +20,12 @@ public class Record {
     }
     
     public String valueListToString() {
-        return String.join("\t", values);
+        ArrayList<String> vl = new ArrayList<String>();
+
+        for (Value v: values) {
+            vl.add(v.getValue());
+        }
+
+        return String.join("\t", vl);
     }
 }

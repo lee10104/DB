@@ -194,8 +194,11 @@ public class SimpleDBMS {
                 String value = new String(foundRecord.getData(), "UTF-8");
                 for (String s1: value.split("\t\t")) {
                     Record record = new Record();
-                    for (String s2: s1.split("\t")) {
-                        record.addValue(s2);
+                    String[] arr = s1.split("\t");
+                    ArrayList<Column> cl = t.getColumns();
+                    for (int i = 0; i < arr.length; i++) {
+                        Value v = new Value(cl.get(i).getDataType(), arr[i]);
+                        record.addValue(v);
                     }
                     t.addRecord(record);
                 }
@@ -308,13 +311,15 @@ public class SimpleDBMS {
             for (Value v: vl) {
                 if (c.getName().equals(v.getColumnName())) {
                     String value = v.getValue();
-                    if (c.getDataType().getType() == Flags.CHAR) {
-                        value = value.substring(0, c.getDataType().getCharLength());
+                    DataType dt = c.getDataType();
+                    v.setDataType(dt);
+                    if (dt.getType() == Flags.CHAR) {
+                        v.setValue(value.substring(0, dt.getCharLength()));
                     }
                     if (value == null) {
-                        value = N;
+                        v.setValue(N);
                     }
-                    newRecord.addValue(value);
+                    newRecord.addValue(v);
                     break;
                 }
             }
@@ -337,8 +342,8 @@ public class SimpleDBMS {
         for (Value v: vl) {
             boolean flag = false;
             Column c = v.getColumn();
-            for (String s: c.getReferencedTable().getColumnValues(c.getReferencedColumn())) {
-                if (s.equals(v.getValue())) {
+            for (Value vv: c.getReferencedTable().getColumnValues(c.getReferencedColumn())) {
+                if (vv.equals(v)) {
                     flag = true;
                 }
             }

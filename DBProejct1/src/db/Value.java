@@ -26,9 +26,17 @@ public class Value {
     public String getValue() {
         return value;
     }
-    
+
+    public void setValue(String value) {
+        this.value = value;
+    }
+
     public void setColumn(Column column) {
         this.column = column;
+    }
+    
+    public void setDataType(DataType dataType) {
+        this.dataType = dataType;
     }
     
     public Column getColumn() {
