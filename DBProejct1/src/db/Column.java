@@ -66,10 +66,17 @@ public class Column implements Serializable{
         this.rColumn = c;
     }
     
+    public Table getReferencedTable() {
+        return rTable;
+    }
+    
+    public Column getReferencedColumn() {
+        return rColumn;
+    }
+    
     public String printColumn() {
         String isNullStr;
         String keyStr;
-        String refStr;
 
         if (isNull) {
             isNullStr = "Y";
