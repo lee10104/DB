@@ -3,14 +3,16 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class ConcertManager {
-    String serverName = "147.46.15.147";
-    String dbName = "db2013-11422";
-    String userName = "u2013-11422";
-    String password = "a5716f255ddf";
+    static String serverName = "147.46.15.147";
+    static String dbName = "db2013-11422";
+    static String userName = "u2013-11422";
+    static String password = "a5716f255ddf";
     
-    String url = "jdbc:mariadb://" + serverName + "/" + dbName;
+    static String url = "jdbc:mariadb://" + serverName + "/" + dbName;
     
-    public static void main(String args[]) {
-        
+    Messages msg = new Messages();
+    
+    public static void main(String args[]) throws SQLException {
+        Connection con = DriverManager.getConnection(url, userName, password);
     }
 }
