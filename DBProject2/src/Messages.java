@@ -22,6 +22,27 @@ public class Messages {
     public static final int QUIT = 19;
     public static final int INVALID_ACTION = 20;
     
+    public void printMenu() {
+        System.out.println(
+                "============================================================\n" + 
+                "1. print all buildings\n" + 
+                "2. print all performances\n" + 
+                "3. print all audiences\n" + 
+                "4. insert a new building\n" + 
+                "5. remove a building\n" + 
+                "6. insert a new performance\n" + 
+                "7. remove a performance\n" + 
+                "8. insert a new audience\n" + 
+                "9. remove an audience\n" + 
+                "10. assign a performance to a building\n" + 
+                "11. book a performance\n" + 
+                "12. print all performances which assigned at a building\n" + 
+                "13. print all audiences who booked for a performance\n" + 
+                "14. print ticket booking status of a performance\n" + 
+                "15. exit\n" + 
+                "============================================================\n");
+    }
+    
     public void printMessage(int flag) {
         if (flag == BUILDING_INSERTED) {
             System.out.println("A building is successfully inserted");
@@ -68,8 +89,10 @@ public class Messages {
         } else if (flag == PERFORMANCE_NOT_ASSIGNED) {
             System.out.println("Performance " + num + " isn't assigned");
         } else if (flag == BOOK_SUCCEED) {
-            System.out.println("Successfully book a performance");
-            System.out.println("Total ticket price is " + num);
+            System.out.println(
+                    "Successfully book a performance\n" + 
+                    "Total ticket price is " + 
+                    num);
         }
     }
 }
