@@ -45,8 +45,8 @@ public class ConcertManager {
     }
     
     public boolean isExist(String table, int id) {
-        String sql = "SELECT count(id) FROM " + table + " WHERE id = " + id;
         try {
+            String sql = "SELECT count(id) FROM " + table + " WHERE id = " + id;
             PreparedStatement stmt = con.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
             
@@ -68,9 +68,8 @@ public class ConcertManager {
     }
     
     public boolean removeByID(String table, int id) {
-        String sql = "DELETE FROM " + table + " WHERE id = " + id;
-
         try {
+            String sql = "DELETE FROM " + table + " WHERE id = " + id;
             PreparedStatement stmt = con.prepareStatement(sql);
             int success = stmt.executeUpdate();
             
@@ -87,8 +86,8 @@ public class ConcertManager {
     }
     
     public void printBuildings() {
-        String sql = "SELECT * FROM building";
         try {
+            String sql = "SELECT * FROM building";
             PreparedStatement stmt = con.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
             
@@ -119,8 +118,8 @@ public class ConcertManager {
     }
     
     public void printPerformances() {
-        String sql = "SELECT * FROM performance";
         try {
+            String sql = "SELECT * FROM performance";
             PreparedStatement stmt = con.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
             
@@ -150,10 +149,9 @@ public class ConcertManager {
         }
     }
     
-    public void printAudiences() {
-        String sql = "SELECT * FROM audience";
-        
+    public void printAudiences() {        
         try {
+            String sql = "SELECT * FROM audience";
             PreparedStatement stmt = con.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
             
@@ -174,12 +172,11 @@ public class ConcertManager {
     }
   
     public int insertBuilding(String name, String location, int capacity) {
-        String sql = "INSERT INTO building VALUES(null, ?, ?, ?)";
-        
         if (capacity <= 0)
             return Messages.CAPACITY_ERROR;
         
         try {
+            String sql = "INSERT INTO building VALUES(null, ?, ?, ?)";
             PreparedStatement stmt = con.prepareStatement(sql);
             
             stmt.setString(1, name);
@@ -206,14 +203,13 @@ public class ConcertManager {
         }
     }
     
-    public int insertPerformance(String name, String type, int price) {
-        String sql = "INSERT INTO performance VALUES(null, ?, ?, ?, null)";
-        
+    public int insertPerformance(String name, String type, int price) {        
         if (price < 0) {
             return Messages.PRICE_ERROR;
         }
         
         try {
+            String sql = "INSERT INTO performance VALUES(null, ?, ?, ?, null)";
             PreparedStatement stmt = con.prepareStatement(sql);
             
             stmt.setString(1, name);
@@ -240,9 +236,7 @@ public class ConcertManager {
         }
     }
     
-    public int insertAudience(String name, String gender, int age) {
-        String sql = "INSERT INTO audience VALUES(null, ?, ?, ?)";
-        
+    public int insertAudience(String name, String gender, int age) {        
         if (!gender.equals("M") && !gender.equals("F")) {
             return Messages.GENDER_ERROR;
         }
@@ -252,6 +246,7 @@ public class ConcertManager {
         }
         
         try {
+            String sql = "INSERT INTO audience VALUES(null, ?, ?, ?)";
             PreparedStatement stmt = con.prepareStatement(sql);
             
             stmt.setString(1, name);
@@ -287,8 +282,8 @@ public class ConcertManager {
             return Messages.NO_PERFORMANCE_ID;
         }
         
-        String sql = "SELECT building FROM performance WHERE id = " + pID;
         try {
+            String sql = "SELECT building FROM performance WHERE id = " + pID;
             PreparedStatement stmt = con.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
 
@@ -338,8 +333,8 @@ public class ConcertManager {
             return Messages.NO_BUILDING_ID;
         }
         
-        String sql = "SELECT * FROM performance WHERE building = " + bID;
         try {
+            String sql = "SELECT * FROM performance WHERE building = " + bID;
             PreparedStatement stmt = con.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
             
