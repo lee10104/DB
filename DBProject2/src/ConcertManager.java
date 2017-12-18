@@ -67,21 +67,13 @@ public class ConcertManager {
         }
     }
     
-    public boolean removeByID(String table, int id) {
+    public void removeByID(String table, int id) {
         try {
             String sql = "DELETE FROM " + table + " WHERE id = " + id;
             PreparedStatement stmt = con.prepareStatement(sql);
-            int success = stmt.executeUpdate();
-            
-            if (success == 0) {
-                return false;
-            } else {
-                return true;
-            }
+            stmt.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
-            
-            return false;
         }
     }
     
@@ -235,10 +227,21 @@ public class ConcertManager {
     }
     
     public int removeBuilding(int bID) {
-        if (removeByID("building", bID)) {
-            return Messages.BUILDING_REMOVED;
-        } else {
+        if (!isExist("building", bID)) {
             return Messages.NO_BUILDING_ID;
+        }
+        
+        try {
+            String sql = "UPDATE performance SET building = null WHERE building = " + bID;
+            PreparedStatement stmt = con.prepareStatement(sql);
+            stmt.executeUpdate();
+            removeByID("building", bID);
+            
+            return Messages.BUILDING_REMOVED;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            
+            return Messages.OTHER_ERROR;
         }
     }
     
@@ -268,10 +271,21 @@ public class ConcertManager {
     }
     
     public int removePerformance(int pID) {
-        if (removeByID("performance", pID)) {
-            return Messages.PERFORMANCE_REMOVED;
-        } else {
+        if (!isExist("performance", pID)) {
             return Messages.NO_PERFORMANCE_ID;
+        }
+        
+        try {
+            String sql = "DELETE FROM seat WHERE performance = " + pID;
+            PreparedStatement stmt = con.prepareStatement(sql);
+            stmt.executeUpdate();
+            removeByID("performance", pID);
+            
+            return Messages.PERFORMANCE_REMOVED;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            
+            return Messages.OTHER_ERROR;
         }
     }
     
@@ -305,10 +319,21 @@ public class ConcertManager {
     }
     
     public int removeAudience(int aID) {
-        if (removeByID("audience", aID)) {
-            return Messages.AUDIENCE_REMOVED;
-        } else {
+        if (!isExist("audience", aID)) {
             return Messages.NO_AUDIENCE_ID;
+        }
+
+        try {
+            String sql = "UPDATE seat SET audience = null WHERE audience = " + aID;
+            PreparedStatement stmt = con.prepareStatement(sql);
+            stmt.executeUpdate();
+            removeByID("audience", aID);
+            
+            return Messages.AUDIENCE_REMOVED;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            
+            return Messages.OTHER_ERROR;
         }
     }
     

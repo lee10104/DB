@@ -49,7 +49,7 @@ public class BookingApplication {
                 buildingID = reader.nextInt();
                 
                 result = cm.removeBuilding(buildingID);
-                msg.printMessage(result, buildingID);
+                msg.printMessage(result);
             } else if (menu == Menu.INSERT_PERFORMANCE) {
                 String performanceName;
                 String performanceType;
@@ -71,7 +71,7 @@ public class BookingApplication {
                 performanceID = reader.nextInt();
                 
                 result = cm.removePerformance(performanceID);
-                msg.printMessage(result, performanceID);
+                msg.printMessage(result);
             } else if (menu == Menu.INSERT_AUDIENCE) {
                 String audienceName;
                 String audienceGender;
