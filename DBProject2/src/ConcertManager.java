@@ -1,5 +1,7 @@
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Scanner;
 
@@ -16,7 +18,7 @@ public class ConcertManager {
         this.dbName = "db2013-11422";
         this.userName = "u2013-11422";
         this.password = "a5716f255ddf";
-        
+
         this.url = "jdbc:mariadb://" + this.serverName + "/" + this.dbName;
         
         try {
@@ -26,12 +28,56 @@ public class ConcertManager {
         }
     }
     
+    public void printLine() {
+        System.out.println("--------------------------------------------------------------------------------");
+    }
+    
+    public void printBuildingColumn() {
+        System.out.println("id\tname\t\t\tlocation\tcapacity\tassigned");
+    }
+    
+    public void printPerformanceColumn() {
+        System.out.println("id\tname\t\t\ttype\tprice\tbooked");
+    }
+    
+    public void printAudienceColumn() {
+        System.out.println("id\tname\t\t\tgender\tage");
+    }
+    
     public void printBuildings() {
-        
+        String sql = "SELECT * FROM building";
+        try {
+            PreparedStatement stmt = con.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            
+            printLine();
+            printBuildingColumn();
+            printLine();           
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                String location = rs.getString("location");
+                int capacity = rs.getInt("capacity");
+                
+                String sql_ = "SELECT COUNT(id) FROM performance WHERE building = " + id;
+                PreparedStatement stmt_ = con.prepareStatement(sql_);
+                ResultSet rs_ = stmt_.executeQuery();
+
+                int assign = 0;
+                if (rs_.next()) {
+                    assign = rs_.getInt("count(id)");
+                }
+                
+                System.out.println(id + "\t" + name + "\t" + location + "\t\t" + capacity + "\t\t" + assign);
+            }
+            printLine();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
     
     public void printPerformances() {
-        
+
     }
     
     public void printAudiences() {
@@ -39,7 +85,22 @@ public class ConcertManager {
     }
   
     public void insertBuilding(String name, String location, int capacity) {
+        String sql = "INSERT INTO building VALUES(null, ?, ?, ?)";
         
+        try {
+            PreparedStatement stmt = con.prepareStatement(sql);
+            
+            stmt.setString(1, name);
+            stmt.setString(2, location);
+            stmt.setInt(3, capacity);
+            
+            int success = stmt.executeUpdate();
+            
+            
+            stmt.close();            
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
     
     public void removeBuilding(int bID) {
