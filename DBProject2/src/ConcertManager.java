@@ -197,6 +197,7 @@ public class ConcertManager {
                 
                 System.out.println(id + "\t" + name + "\t\t" + gender + "\t\t" + age);
             }
+            printLine();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -438,10 +439,24 @@ public class ConcertManager {
             return Messages.NO_PERFORMANCE_ID;
         }
         
+        if (!isExist("audience", aID)) {
+            return Messages.NO_AUDIENCE_ID;
+        }
+        
         try {
-            String sql = "SELECT count(number) FROM seat WHERE performance = " + pID;
+            String sql = "SELECT building FROM performance WHERE id = " + pID;
             PreparedStatement stmt = con.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                if (rs.getInt("building") == 0) {
+                    return Messages.PERFORMANCE_NOT_ASSIGNED;
+                }
+            }
+            
+            sql = "SELECT count(number) FROM seat WHERE performance = " + pID;
+            stmt = con.prepareStatement(sql);
+            rs = stmt.executeQuery();
             
             int capacity = 0;
             if (rs.next()) {

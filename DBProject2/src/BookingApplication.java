@@ -49,7 +49,11 @@ public class BookingApplication {
                 buildingID = reader.nextInt();
                 
                 result = cm.removeBuilding(buildingID);
-                msg.printMessage(result);
+                if (result == Messages.NO_BUILDING_ID) {
+                    msg.printMessage(result, buildingID);
+                } else {
+                    msg.printMessage(result);
+                }
             } else if (menu == Menu.INSERT_PERFORMANCE) {
                 String performanceName;
                 String performanceType;
@@ -71,7 +75,11 @@ public class BookingApplication {
                 performanceID = reader.nextInt();
                 
                 result = cm.removePerformance(performanceID);
-                msg.printMessage(result);
+                if (result == Messages.NO_PERFORMANCE_ID) {
+                    msg.printMessage(result, performanceID);
+                } else {
+                    msg.printMessage(result);
+                }
             } else if (menu == Menu.INSERT_AUDIENCE) {
                 String audienceName;
                 String audienceGender;
@@ -92,8 +100,12 @@ public class BookingApplication {
                 System.out.print("Audience ID: ");
                 audienceID = reader.nextInt();
                 
-                cm.removeAudience(audienceID);
-                msg.printMessage(Messages.AUDIENCE_REMOVED);
+                result = cm.removeAudience(audienceID);
+                if (result == Messages.NO_AUDIENCE_ID) {
+                    msg.printMessage(result, audienceID);
+                } else {
+                    msg.printMessage(result);
+                }
             } else if (menu == Menu.ASSIGN_PERFORMANCE_TO_BUILDING) {
                 int buildingID;
                 int performanceID;
@@ -105,6 +117,10 @@ public class BookingApplication {
                 
                 result = cm.assign(buildingID, performanceID);
                 if (result == Messages.PERFORMANCE_ALREADY_ASSIGNED) {
+                    msg.printMessage(result, performanceID);
+                } else if (result == Messages.NO_BUILDING_ID) {
+                    msg.printMessage(result, buildingID);
+                } else if (result == Messages.NO_PERFORMANCE_ID) {
                     msg.printMessage(result, performanceID);
                 } else {
                     msg.printMessage(result);
@@ -127,6 +143,12 @@ public class BookingApplication {
                 if (result == Messages.BOOK_SUCCEED) {
                     price = cm.getPrice(performanceID, audienceID, seatNumbers);
                     msg.printMessage(result, price);
+                } else if (result == Messages.NO_PERFORMANCE_ID) {
+                    msg.printMessage(result, performanceID);
+                } else if (result == Messages.PERFORMANCE_NOT_ASSIGNED) {
+                    msg.printMessage(result, performanceID);
+                } else if (result == Messages.NO_AUDIENCE_ID) {
+                    msg.printMessage(result, audienceID);
                 } else {
                     msg.printMessage(result);
                 }
@@ -138,7 +160,11 @@ public class BookingApplication {
                 reader.nextLine();
                 
                 result = cm.printAssignedPerformances(buildingID);
-                msg.printMessage(result);
+                if (result == Messages.NO_BUILDING_ID) {
+                    msg.printMessage(result, buildingID);
+                } else {
+                    msg.printMessage(result);
+                }
             } else if (menu == Menu.PRINT_BOOKED_AUDIENCE) {
                 int performanceID;
                 
@@ -147,7 +173,11 @@ public class BookingApplication {
                 reader.nextLine();
                 
                 result = cm.printBookedAudience(performanceID);
-                msg.printMessage(result);
+                if (result == Messages.NO_PERFORMANCE_ID) {
+                    msg.printMessage(result, performanceID);
+                } else {
+                    msg.printMessage(result);
+                }
             } else if (menu == Menu.PRINT_BOOKING_STATUS) {
                 int performanceID;
                 
@@ -156,7 +186,11 @@ public class BookingApplication {
                 reader.nextLine();
                 
                 result = cm.printBookingStatus(performanceID);
-                msg.printMessage(result);
+                if (result == Messages.NO_PERFORMANCE_ID) {
+                    msg.printMessage(result, performanceID);
+                } else {
+                    msg.printMessage(result);
+                }
             } else if (menu == Menu.QUIT) {
                 reader.close();
                 msg.printMessage(Messages.QUIT);
