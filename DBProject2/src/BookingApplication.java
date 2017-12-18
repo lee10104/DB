@@ -5,6 +5,10 @@ public class BookingApplication {
     static Messages msg = new Messages();
     static ConcertManager cm = new ConcertManager();
     
+    public static String truncate(String s) {
+        return s.substring(0, Math.min(s.length(), 200));
+    }
+    
     public static void main(String args[]) throws SQLException {
         Scanner reader = new Scanner(System.in);
 
@@ -29,9 +33,9 @@ public class BookingApplication {
                 int buildingCapacity;
                 
                 System.out.print("Building name: ");
-                buildingName = reader.nextLine();
+                buildingName = truncate(reader.nextLine());
                 System.out.print("Building location: ");
-                buildingLocation = reader.nextLine();
+                buildingLocation = truncate(reader.nextLine());
                 System.out.print("Building capacity: ");
                 buildingCapacity = reader.nextInt();
                 reader.nextLine();
@@ -52,9 +56,9 @@ public class BookingApplication {
                 int performancePrice;
                 
                 System.out.print("Performance name: ");
-                performanceName = reader.nextLine();
+                performanceName = truncate(reader.nextLine());
                 System.out.print("Performance type: ");
-                performanceType = reader.nextLine();
+                performanceType = truncate(reader.nextLine());
                 System.out.print("Performance price: ");
                 performancePrice = reader.nextInt();
                 
@@ -74,7 +78,7 @@ public class BookingApplication {
                 int audienceAge;
                 
                 System.out.print("Audience name: ");
-                audienceName = reader.nextLine();
+                audienceName = truncate(reader.nextLine());
                 System.out.print("Audience gender: ");
                 audienceGender = reader.nextLine();
                 System.out.print("Audience age: ");
