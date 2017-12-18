@@ -80,7 +80,7 @@ public class Messages {
         }
     }
     
-    public void printMessages(int flag, int num) {
+    public void printMessage(int flag, int num) {
         if (flag == NO_BUILDING_ID) {
             System.out.println("Building " + num + " doesn’t exist");
         } else if (flag == NO_PERFORMANCE_ID) {
