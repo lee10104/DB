@@ -171,7 +171,7 @@ public class ConcertManager {
                 String type = rs.getString("type");
                 int price = rs.getInt("price");
                 
-                String sql_ = "SELECT COUNT(number) FROM seat WHERE audience is not null";
+                String sql_ = "SELECT COUNT(number) FROM seat WHERE performance = " + id + " and audience is not null";
                 PreparedStatement stmt_ = con.prepareStatement(sql_);
                 ResultSet rs_ = stmt_.executeQuery();
                 
@@ -386,7 +386,7 @@ public class ConcertManager {
                 String type = rs.getString("type");
                 int price = rs.getInt("price");
                 
-                String sql_ = "SELECT COUNT(number) FROM seat WHERE audience is not null";
+                String sql_ = "SELECT COUNT(number) FROM seat WHERE performance = " + id + " and audience is not null";
                 PreparedStatement stmt_ = con.prepareStatement(sql_);
                 ResultSet rs_ = stmt_.executeQuery();
                 
