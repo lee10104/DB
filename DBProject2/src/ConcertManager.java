@@ -44,6 +44,7 @@ public class ConcertManager {
         System.out.println("id\tname\t\t\tgender\t\tage");
     }
     
+    // table에 해당 id가 있는지 확인
     public boolean isExist(String table, int id) {
         try {
             String sql = "SELECT count(id) FROM " + table + " WHERE id = " + id;
@@ -54,6 +55,9 @@ public class ConcertManager {
             if (rs.next()) {
                 count = rs.getInt("count(id)");
             }
+            
+            stmt.close();
+            rs.close();
             
             if (count > 0) {
                 return true;
@@ -67,6 +71,7 @@ public class ConcertManager {
         }
     }
     
+    // table의 해당 id record 삭제
     public void removeByID(String table, int id) {
         try {
             String sql = "DELETE FROM " + table + " WHERE id = " + id;
@@ -77,6 +82,7 @@ public class ConcertManager {
         }
     }
     
+    // 관객의 나이, 예매 표 수로 가격 return
     public int getPrice(int pID, int aID, String s) {
         String[] seatNumbers = s.replace("\\s+", "").split(",");
         
@@ -107,6 +113,9 @@ public class ConcertManager {
             } else if (age <= 18) {
                 price = (int) Math.round((float) price * 0.8);
             }
+            
+            stmt.close();
+            rs.close();
             
             return price * seatNumbers.length;
         } catch (SQLException e) {
@@ -143,6 +152,9 @@ public class ConcertManager {
                 System.out.println(id + "\t" + name + "\t" + location + "\t\t" + capacity + "\t\t" + assign);
             }
             printLine();
+            
+            stmt.close();
+            rs.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -175,6 +187,9 @@ public class ConcertManager {
                 System.out.println(id + "\t" + name + "\t" + type + "\t\t" + price + "\t\t" + booked);
             }
             printLine();
+            
+            stmt.close();
+            rs.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -198,6 +213,9 @@ public class ConcertManager {
                 System.out.println(id + "\t" + name + "\t\t" + gender + "\t\t" + age);
             }
             printLine();
+            
+            stmt.close();
+            rs.close();
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -233,10 +251,13 @@ public class ConcertManager {
         }
         
         try {
+            // 해당 건물에 assign된 공연 건물 null로 수정
             String sql = "UPDATE performance SET building = null WHERE building = " + bID;
             PreparedStatement stmt = con.prepareStatement(sql);
             stmt.executeUpdate();
             removeByID("building", bID);
+            
+            stmt.close();
             
             return Messages.BUILDING_REMOVED;
         } catch (SQLException e) {
@@ -277,10 +298,13 @@ public class ConcertManager {
         }
         
         try {
+            // 해당 공연 seat 먼저 삭제
             String sql = "DELETE FROM seat WHERE performance = " + pID;
             PreparedStatement stmt = con.prepareStatement(sql);
             stmt.executeUpdate();
             removeByID("performance", pID);
+            
+            stmt.close();
             
             return Messages.PERFORMANCE_REMOVED;
         } catch (SQLException e) {
@@ -325,10 +349,13 @@ public class ConcertManager {
         }
 
         try {
+            // 예매 정보 먼저 삭제
             String sql = "UPDATE seat SET audience = null WHERE audience = " + aID;
             PreparedStatement stmt = con.prepareStatement(sql);
             stmt.executeUpdate();
             removeByID("audience", aID);
+            
+            stmt.close();
             
             return Messages.AUDIENCE_REMOVED;
         } catch (SQLException e) {
@@ -348,6 +375,7 @@ public class ConcertManager {
         }
         
         try {
+            // 이미 assign된 공연인지 확인
             String sql = "SELECT building FROM performance WHERE id = " + pID;
             PreparedStatement stmt = con.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
@@ -359,12 +387,12 @@ public class ConcertManager {
                 }
             }
 
+            // 공연을 건물에 assign
             sql = "UPDATE performance SET building = " + bID + " WHERE id = " + pID;
             stmt = con.prepareStatement(sql);
             stmt.executeUpdate();
-            
-            stmt.close();
-            
+                 
+            // 건물의 capacity만큼 seat 생성
             sql = "SELECT capacity FROM building WHERE id = " + bID;
             stmt = con.prepareStatement(sql);
             rs = stmt.executeQuery();
@@ -373,9 +401,7 @@ public class ConcertManager {
             if (rs.next()) {
                 capacity = rs.getInt("capacity");
             }
-            
-            stmt.close();
-            
+
             sql = "INSERT into seat VALUES(" + pID + ", ?, null)";
             stmt = con.prepareStatement(sql);
             for (int i = 1; i <= capacity; i++) {
@@ -384,6 +410,7 @@ public class ConcertManager {
             }
             
             stmt.close();
+            rs.close();
             
             return Messages.PERFORMANCE_ASSIGNED;
         } catch (SQLException e) {
@@ -424,6 +451,10 @@ public class ConcertManager {
                 System.out.println(id + "\t" + name + "\t" + type + "\t\t" + price + "\t\t" + booked);
             }
             printLine();
+            
+            stmt.close();
+            rs.close();
+            
             return Messages.SUCCEED;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -444,6 +475,7 @@ public class ConcertManager {
         }
         
         try {
+            // assign 되어있는 공연인지 확인
             String sql = "SELECT building FROM performance WHERE id = " + pID;
             PreparedStatement stmt = con.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
@@ -454,6 +486,7 @@ public class ConcertManager {
                 }
             }
             
+            // 예매 좌석이 존재하는 좌석인지, 이미 예매된 좌석인지 확인
             sql = "SELECT count(number) FROM seat WHERE performance = " + pID;
             stmt = con.prepareStatement(sql);
             rs = stmt.executeQuery();
@@ -479,11 +512,15 @@ public class ConcertManager {
                 }
             }
             
+            // 예매
             for (String seatNumber: seatNumbers) {
                 sql = "UPDATE seat SET audience = " + aID + " WHERE performance = " + pID + " and number = " + seatNumber;
                 stmt = con.prepareStatement(sql);
                 stmt.executeUpdate();
             }
+            
+            stmt.close();
+            rs.close();
             
             return Messages.BOOK_SUCCEED;
         } catch (SQLException e) {
@@ -516,6 +553,9 @@ public class ConcertManager {
             }
             printLine();
 
+            stmt.close();
+            rs.close();
+            
             return Messages.SUCCEED;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -548,6 +588,9 @@ public class ConcertManager {
                 }
             }
             printLine();
+            
+            stmt.close();
+            rs.close();
             
             return Messages.SUCCEED;
         } catch (SQLException e) {
