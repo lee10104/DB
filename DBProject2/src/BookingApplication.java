@@ -13,6 +13,7 @@ public class BookingApplication {
         while (true) {
             System.out.print("Select your action: ");
             int menu = reader.nextInt();
+            reader.nextLine();
             
             if (menu == Menu.PRINT_BUILDINGS) {
                 cm.printBuildings();
@@ -31,6 +32,7 @@ public class BookingApplication {
                 buildingLocation = reader.nextLine();
                 System.out.print("Building capacity: ");
                 buildingCapacity = reader.nextInt();
+                reader.nextLine();
                 
                 cm.insertBuilding(buildingName, buildingLocation, buildingCapacity);
             } else if (menu == Menu.REMOVE_BUILDING) {
@@ -128,6 +130,7 @@ public class BookingApplication {
             } else if (menu == Menu.QUIT) {
                 reader.close();
                 msg.printMessage(Messages.QUIT);
+                System.exit(0);
             } else {
                 msg.printMessage(Messages.INVALID_ACTION);
             }
