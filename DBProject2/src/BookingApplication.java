@@ -44,8 +44,8 @@ public class BookingApplication {
                 System.out.print("Building ID: ");
                 buildingID = reader.nextInt();
                 
-                cm.removeBuilding(buildingID);
-                msg.printMessage(Messages.BUILDING_REMOVED);
+                result = cm.removeBuilding(buildingID);
+                msg.printMessage(result, buildingID);
             } else if (menu == Menu.INSERT_PERFORMANCE) {
                 String performanceName;
                 String performanceType;
@@ -66,8 +66,8 @@ public class BookingApplication {
                 System.out.print("Performance ID: ");
                 performanceID = reader.nextInt();
                 
-                cm.removePerformance(performanceID);
-                msg.printMessage(Messages.PERFORMANCE_REMOVED);
+                result = cm.removePerformance(performanceID);
+                msg.printMessage(result, performanceID);
             } else if (menu == Menu.INSERT_AUDIENCE) {
                 String audienceName;
                 String audienceGender;

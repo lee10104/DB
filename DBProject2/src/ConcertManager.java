@@ -44,6 +44,25 @@ public class ConcertManager {
         System.out.println("id\tname\t\t\tgender\t\tage");
     }
     
+    public boolean removeByID(String table, int id) {
+        String sql = "DELETE FROM " + table + " WHERE id = " + id;
+
+        try {
+            PreparedStatement stmt = con.prepareStatement(sql);
+            int success = stmt.executeUpdate();
+            
+            if (success == 0) {
+                return false;
+            } else {
+                return true;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            
+            return false;
+        }
+    }
+    
     public void printBuildings() {
         String sql = "SELECT * FROM building";
         try {
@@ -157,21 +176,10 @@ public class ConcertManager {
     }
     
     public int removeBuilding(int bID) {
-        String sql = "DELETE FROM building WHERE id = " + bID;
-
-        try {
-            PreparedStatement stmt = con.prepareStatement(sql);
-            int success = stmt.executeUpdate();
-            
-            if (success == 0) {
-                return Messages.NO_BUILDING_ID;
-            } else {
-                return Messages.BUILDING_REMOVED;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            
-            return Messages.OTHER_ERROR;
+        if (removeByID("building", bID)) {
+            return Messages.BUILDING_REMOVED;
+        } else {
+            return Messages.NO_BUILDING_ID;
         }
     }
     
@@ -192,7 +200,7 @@ public class ConcertManager {
             stmt.executeUpdate();
             
             stmt.close();
-       
+            
             return Messages.PERFORMANCE_INSERTED;
         } catch (SQLException e) {
             e.printStackTrace();
@@ -201,8 +209,12 @@ public class ConcertManager {
         }   
     }
     
-    public void removePerformance(int pID) {
-        
+    public int removePerformance(int pID) {
+        if (removeByID("performance", pID)) {
+            return Messages.PERFORMANCE_REMOVED;
+        } else {
+            return Messages.NO_PERFORMANCE_ID;
+        }
     }
     
     public int insertAudience(String name, String gender, int age) {
@@ -235,8 +247,12 @@ public class ConcertManager {
         }
     }
     
-    public void removeAudience(int aID) {
-        
+    public int removeAudience(int aID) {
+        if (removeByID("audience", aID)) {
+            return Messages.AUDIENCE_REMOVED;
+        } else {
+            return Messages.NO_AUDIENCE_ID;
+        }
     }
     
     public void assign(int bID, int pID) {
