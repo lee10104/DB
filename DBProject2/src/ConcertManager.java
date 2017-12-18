@@ -37,11 +37,11 @@ public class ConcertManager {
     }
     
     public void printPerformanceColumn() {
-        System.out.println("id\tname\t\t\ttype\tprice\tbooked");
+        System.out.println("id\tname\t\t\ttype\t\tprice\t\tbooked");
     }
     
     public void printAudienceColumn() {
-        System.out.println("id\tname\t\t\tgender\tage");
+        System.out.println("id\tname\t\t\tgender\t\tage");
     }
     
     public void printBuildings() {
@@ -77,15 +77,65 @@ public class ConcertManager {
     }
     
     public void printPerformances() {
-
+        String sql = "SELECT * FROM performance";
+        try {
+            PreparedStatement stmt = con.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            
+            printLine();
+            printPerformanceColumn();
+            printLine();
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                String type = rs.getString("type");
+                int price = rs.getInt("price");
+                
+                String sql_ = "SELECT COUNT(number) FROM seat WHERE audience is not null";
+                PreparedStatement stmt_ = con.prepareStatement(sql_);
+                ResultSet rs_ = stmt_.executeQuery();
+                
+                int booked = 0;
+                if (rs_.next()) {
+                    booked = rs_.getInt("count(number)");
+                }
+                
+                System.out.println(id + "\t" + name + "\t" + type + "\t\t" + price + "\t\t" + booked);
+            }
+            printLine();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
     
     public void printAudiences() {
+        String sql = "SELECT * FROM audience";
         
+        try {
+            PreparedStatement stmt = con.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            
+            printLine();
+            printAudienceColumn();
+            printLine();
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                String gender = rs.getString("gender");
+                int age = rs.getInt("age");
+                
+                System.out.println(id + "\t" + name + "\t\t" + gender + "\t\t" + age);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
   
-    public void insertBuilding(String name, String location, int capacity) {
+    public int insertBuilding(String name, String location, int capacity) {
         String sql = "INSERT INTO building VALUES(null, ?, ?, ?)";
+        
+        if (capacity <= 0)
+            return Messages.CAPACITY_ERROR;
         
         try {
             PreparedStatement stmt = con.prepareStatement(sql);
@@ -94,29 +144,95 @@ public class ConcertManager {
             stmt.setString(2, location);
             stmt.setInt(3, capacity);
             
-            int success = stmt.executeUpdate();
+            stmt.executeUpdate();
             
+            stmt.close();
             
-            stmt.close();            
+            return Messages.BUILDING_INSERTED;
         } catch (SQLException e) {
             e.printStackTrace();
+            
+            return Messages.OTHER_ERROR;
         }
     }
     
-    public void removeBuilding(int bID) {
-        
+    public int removeBuilding(int bID) {
+        String sql = "DELETE FROM building WHERE id = " + bID;
+
+        try {
+            PreparedStatement stmt = con.prepareStatement(sql);
+            int success = stmt.executeUpdate();
+            
+            if (success == 0) {
+                return Messages.NO_BUILDING_ID;
+            } else {
+                return Messages.BUILDING_REMOVED;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            
+            return Messages.OTHER_ERROR;
+        }
     }
     
-    public void insertPerformance(String name, String type, int price) {
+    public int insertPerformance(String name, String type, int price) {
+        String sql = "INSERT INTO performance VALUES(null, ?, ?, ?, null)";
         
+        if (price < 0) {
+            return Messages.PRICE_ERROR;
+        }
+        
+        try {
+            PreparedStatement stmt = con.prepareStatement(sql);
+            
+            stmt.setString(1, name);
+            stmt.setString(2, type);
+            stmt.setInt(3, price);
+            
+            stmt.executeUpdate();
+            
+            stmt.close();
+       
+            return Messages.PERFORMANCE_INSERTED;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            
+            return Messages.OTHER_ERROR;
+        }   
     }
     
     public void removePerformance(int pID) {
         
     }
     
-    public void insertAudience(String name, String gender, int age) {
+    public int insertAudience(String name, String gender, int age) {
+        String sql = "INSERT INTO audience VALUES(null, ?, ?, ?)";
         
+        if (!gender.equals("M") && !gender.equals("F")) {
+            return Messages.GENDER_ERROR;
+        }
+        
+        if (age <= 0) {
+            return Messages.AGE_ERROR;
+        }
+        
+        try {
+            PreparedStatement stmt = con.prepareStatement(sql);
+            
+            stmt.setString(1, name);
+            stmt.setString(2, gender);
+            stmt.setInt(3, age);
+            
+            stmt.executeUpdate();
+            
+            stmt.close();
+            
+            return Messages.AUDIENCE_INSERTED;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            
+            return Messages.OTHER_ERROR;
+        }
     }
     
     public void removeAudience(int aID) {

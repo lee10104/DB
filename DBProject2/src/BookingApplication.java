@@ -10,6 +10,8 @@ public class BookingApplication {
 
         msg.printMenu();
         
+        int result;
+        
         while (true) {
             System.out.print("Select your action: ");
             int menu = reader.nextInt();
@@ -34,7 +36,8 @@ public class BookingApplication {
                 buildingCapacity = reader.nextInt();
                 reader.nextLine();
                 
-                cm.insertBuilding(buildingName, buildingLocation, buildingCapacity);
+                result = cm.insertBuilding(buildingName, buildingLocation, buildingCapacity);
+                msg.printMessage(result);
             } else if (menu == Menu.REMOVE_BUILDING) {
                 int buildingID;
                 
@@ -42,6 +45,7 @@ public class BookingApplication {
                 buildingID = reader.nextInt();
                 
                 cm.removeBuilding(buildingID);
+                msg.printMessage(Messages.BUILDING_REMOVED);
             } else if (menu == Menu.INSERT_PERFORMANCE) {
                 String performanceName;
                 String performanceType;
@@ -54,7 +58,8 @@ public class BookingApplication {
                 System.out.print("Performance price: ");
                 performancePrice = reader.nextInt();
                 
-                cm.insertPerformance(performanceName, performanceType, performancePrice);
+                result = cm.insertPerformance(performanceName, performanceType, performancePrice);
+                msg.printMessage(result);
             } else if (menu == Menu.REMOVE_PERFORMANCE) {
                 int performanceID;
                 
@@ -62,6 +67,7 @@ public class BookingApplication {
                 performanceID = reader.nextInt();
                 
                 cm.removePerformance(performanceID);
+                msg.printMessage(Messages.PERFORMANCE_REMOVED);
             } else if (menu == Menu.INSERT_AUDIENCE) {
                 String audienceName;
                 String audienceGender;
@@ -74,7 +80,8 @@ public class BookingApplication {
                 System.out.print("Audience age: ");
                 audienceAge = reader.nextInt();
                 
-                cm.insertAudience(audienceName, audienceGender, audienceAge);
+                result = cm.insertAudience(audienceName, audienceGender, audienceAge);
+                msg.printMessage(result);
             } else if (menu == Menu.REMOVE_AUDIENCE) {
                 int audienceID;
                 
@@ -82,6 +89,7 @@ public class BookingApplication {
                 audienceID = reader.nextInt();
                 
                 cm.removeAudience(audienceID);
+                msg.printMessage(Messages.AUDIENCE_REMOVED);
             } else if (menu == Menu.ASSIGN_PERFORMANCE_TO_BUILDING) {
                 int buildingID;
                 int performanceID;
