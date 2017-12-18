@@ -1,5 +1,6 @@
 
 public class Messages {
+    public static final int OTHER_ERROR = -1;
     public static final int BUILDING_INSERTED = 0;
     public static final int PERFORMANCE_INSERTED = 1;
     public static final int AUDIENCE_INSERTED = 2;
@@ -74,6 +75,8 @@ public class Messages {
             System.out.println("Bye!");
         } else if (flag == INVALID_ACTION) {
             System.out.println("Invalid action");
+        } else if (flag == OTHER_ERROR) {
+            System.out.println("Unknown error");
         }
     }
     
