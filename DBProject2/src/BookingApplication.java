@@ -99,7 +99,12 @@ public class BookingApplication {
                 System.out.print("Performance ID: ");
                 performanceID = reader.nextInt();
                 
-                cm.assign(buildingID, performanceID);
+                result = cm.assign(buildingID, performanceID);
+                if (result == Messages.PERFORMANCE_ALREADY_ASSIGNED) {
+                    msg.printMessage(result, performanceID);
+                } else {
+                    msg.printMessage(result);
+                }
             } else if (menu == Menu.BOOK) {
                 int performanceID;
                 int audienceID;

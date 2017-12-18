@@ -44,6 +44,29 @@ public class ConcertManager {
         System.out.println("id\tname\t\t\tgender\t\tage");
     }
     
+    public boolean isExist(String table, int id) {
+        String sql = "SELECT count(id) FROM " + table + " WHERE id = " + id;
+        try {
+            PreparedStatement stmt = con.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            
+            int count = -1;
+            if (rs.next()) {
+                count = rs.getInt("count(id)");
+            }
+            
+            if (count > 0) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            
+            return false;
+        }
+    }
+    
     public boolean removeByID(String table, int id) {
         String sql = "DELETE FROM " + table + " WHERE id = " + id;
 
@@ -255,12 +278,98 @@ public class ConcertManager {
         }
     }
     
-    public void assign(int bID, int pID) {
+    public int assign(int bID, int pID) {
+        if (!isExist("building", bID)) {
+            return Messages.NO_BUILDING_ID;
+        }
         
+        if (!isExist("performance", pID)) {
+            return Messages.NO_PERFORMANCE_ID;
+        }
+        
+        String sql = "SELECT building FROM performance WHERE id = " + pID;
+        try {
+            PreparedStatement stmt = con.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+
+            if (rs.next()) {
+                int id = rs.getInt("building");
+                if (id > 0) {
+                    return Messages.PERFORMANCE_ALREADY_ASSIGNED;
+                }
+            }
+
+            sql = "UPDATE performance SET building = " + bID + " WHERE id = " + pID;
+            stmt = con.prepareStatement(sql);
+            stmt.executeUpdate();
+            
+            stmt.close();
+            
+            sql = "SELECT capacity FROM building WHERE id = " + bID;
+            stmt = con.prepareStatement(sql);
+            rs = stmt.executeQuery();
+            
+            int capacity = 0;
+            if (rs.next()) {
+                capacity = rs.getInt("capacity");
+            }
+            
+            stmt.close();
+            
+            sql = "INSERT into seat VALUES(" + pID + ", ?, null)";
+            stmt = con.prepareStatement(sql);
+            for (int i = 1; i <= capacity; i++) {
+                stmt.setInt(1, i);
+                stmt.executeUpdate();
+            }
+            
+            stmt.close();
+            
+            return Messages.PERFORMANCE_ASSIGNED;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            
+            return Messages.OTHER_ERROR;
+        }
     }
     
-    public void printAssignedPerformances(int bID) {
+    public int printAssignedPerformances(int bID) {
+        if (!isExist("building", bID)) {
+            return Messages.NO_BUILDING_ID;
+        }
         
+        String sql = "SELECT * FROM performance WHERE building = " + bID;
+        try {
+            PreparedStatement stmt = con.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            
+            printLine();
+            printPerformanceColumn();
+            printLine();
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                String type = rs.getString("type");
+                int price = rs.getInt("price");
+                
+                String sql_ = "SELECT COUNT(number) FROM seat WHERE audience is not null";
+                PreparedStatement stmt_ = con.prepareStatement(sql_);
+                ResultSet rs_ = stmt_.executeQuery();
+                
+                int booked = 0;
+                if (rs_.next()) {
+                    booked = rs_.getInt("count(number)");
+                }
+                
+                System.out.println(id + "\t" + name + "\t" + type + "\t\t" + price + "\t\t" + booked);
+            }
+            printLine();
+            return Messages.SUCCEED;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            
+            return Messages.OTHER_ERROR;
+        }
     }
     
     public void book(int pID, int aID, String s) {

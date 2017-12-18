@@ -1,5 +1,6 @@
 
 public class Messages {
+    public static final int SUCCEED = -2;
     public static final int OTHER_ERROR = -1;
     public static final int BUILDING_INSERTED = 0;
     public static final int PERFORMANCE_INSERTED = 1;
