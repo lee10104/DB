@@ -85,6 +85,45 @@ public class ConcertManager {
         }
     }
     
+    public int getPrice(int pID, int aID, String s) {
+        String[] seatNumbers = s.replace("\\s+", "").split(",");
+        
+        try {
+            int age = 0;
+            int price = 0;
+            
+            String sql = "SELECT age FROM audience WHERE id = " + aID;
+            PreparedStatement stmt = con.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                age = rs.getInt("age");
+            }
+            
+            sql = "SELECT price FROM performance WHERE id = " + pID;
+            stmt = con.prepareStatement(sql);
+            rs = stmt.executeQuery();
+            
+            if (rs.next()) {
+                price = rs.getInt("price");
+            }
+            
+            if (age <= 7) {
+                price = 0;
+            } else if (age <= 12) {
+                price = (int) Math.round((float) price * 0.5);
+            } else if (age <= 18) {
+                price = (int) Math.round((float) price * 0.8);
+            }
+            
+            return price * seatNumbers.length;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            
+            return -1;
+        }
+    }
+    
     public void printBuildings() {
         try {
             String sql = "SELECT * FROM building";
@@ -149,7 +188,7 @@ public class ConcertManager {
         }
     }
     
-    public void printAudiences() {        
+    public void printAudiences() {
         try {
             String sql = "SELECT * FROM audience";
             PreparedStatement stmt = con.prepareStatement(sql);
@@ -203,7 +242,7 @@ public class ConcertManager {
         }
     }
     
-    public int insertPerformance(String name, String type, int price) {        
+    public int insertPerformance(String name, String type, int price) {
         if (price < 0) {
             return Messages.PRICE_ERROR;
         }
@@ -236,7 +275,7 @@ public class ConcertManager {
         }
     }
     
-    public int insertAudience(String name, String gender, int age) {        
+    public int insertAudience(String name, String gender, int age) {
         if (!gender.equals("M") && !gender.equals("F")) {
             return Messages.GENDER_ERROR;
         }
@@ -367,15 +406,114 @@ public class ConcertManager {
         }
     }
     
-    public void book(int pID, int aID, String s) {
-        String[] seatNumbers = s.split(", ");
+    public int book(int pID, int aID, String s) {
+        String[] seatNumbers = s.replaceAll("\\s+", "").split(",");
+        
+        if (!isExist("performance", pID)) {
+            return Messages.NO_PERFORMANCE_ID;
+        }
+        
+        try {
+            String sql = "SELECT count(number) FROM seat WHERE performance = " + pID;
+            PreparedStatement stmt = con.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            
+            int capacity = 0;
+            if (rs.next()) {
+                capacity = rs.getInt("count(number)");
+            }
+            
+            for (String seatNumber: seatNumbers) {
+                if (Integer.parseInt(seatNumber) > capacity) {
+                    return Messages.SEAT_NUMBER_ERROR;
+                }
+                
+                sql = "SELECT audience FROM seat WHERE performance = " + pID + " and number = " + seatNumber;
+                stmt = con.prepareStatement(sql);
+                rs = stmt.executeQuery();
+                
+                if (rs.next()) {
+                    if (rs.getInt("audience") > 0) {
+                        return Messages.BOOK_FAILED;
+                    }
+                }
+            }
+            
+            for (String seatNumber: seatNumbers) {
+                sql = "UPDATE seat SET audience = " + aID + " WHERE performance = " + pID + " and number = " + seatNumber;
+                stmt = con.prepareStatement(sql);
+                stmt.executeUpdate();
+            }
+            
+            return Messages.BOOK_SUCCEED;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            
+            return Messages.OTHER_ERROR;
+        }
     }
     
-    public void printBookedAudience(int pID) {
+    public int printBookedAudience(int pID) {
+        if (!isExist("performance", pID)) {
+            return Messages.NO_PERFORMANCE_ID;
+        }
         
+        try {
+            String sql = "SELECT distinct id, name, gender, age FROM audience, seat WHERE seat.performance = " + pID + " and seat.audience = audience.id";
+            PreparedStatement stmt = con.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            
+            printLine();
+            printAudienceColumn();
+            printLine();
+            while (rs.next()) {
+                int id = rs.getInt("id");
+                String name = rs.getString("name");
+                String gender = rs.getString("gender");
+                int age = rs.getInt("age");
+                
+                System.out.println(id + "\t" + name + "\t\t" + gender + "\t\t" + age);
+            }
+            printLine();
+
+            return Messages.SUCCEED;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            
+            return Messages.OTHER_ERROR;
+        }
     }
     
-    public void printBookingStatus(int pID) {
+    public int printBookingStatus(int pID) {
+        if (!isExist("performance", pID)) {
+            return Messages.NO_PERFORMANCE_ID;
+        }
         
+        try {
+            String sql = "SELECT * FROM seat WHERE performance = " + pID;
+            PreparedStatement stmt = con.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+            
+            printLine();
+            System.out.println("seat_number\t\t\taudience_id");
+            printLine();
+            while (rs.next()) {
+                int seat_number = rs.getInt("number");
+                int audience_id = rs.getInt("audience");
+                
+                if (audience_id > 0) {
+                    System.out.println(seat_number + "\t\t\t" + audience_id);
+                } else {
+                    System.out.println(seat_number);
+                }
+            }
+            printLine();
+            
+            return Messages.SUCCEED;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            
+            return Messages.OTHER_ERROR;
+        }
     }
 }

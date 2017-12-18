@@ -115,31 +115,44 @@ public class BookingApplication {
                 performanceID = reader.nextInt();
                 System.out.print("Audience ID: ");
                 audienceID = reader.nextInt();
+                reader.nextLine();
                 System.out.print("Seat number: ");
                 seatNumbers = reader.nextLine();
                 
-                cm.book(performanceID, audienceID, seatNumbers);
+                result = cm.book(performanceID, audienceID, seatNumbers);
+                if (result == Messages.BOOK_SUCCEED) {
+                    price = cm.getPrice(performanceID, audienceID, seatNumbers);
+                    msg.printMessage(result, price);
+                } else {
+                    msg.printMessage(result);
+                }
             } else if (menu == Menu.PRINT_ASSIGNED_PERFORMANCES) {
                 int buildingID;
                 
                 System.out.print("Building ID: ");
                 buildingID = reader.nextInt();
+                reader.nextLine();
                 
-                cm.printAssignedPerformances(buildingID);
+                result = cm.printAssignedPerformances(buildingID);
+                msg.printMessage(result);
             } else if (menu == Menu.PRINT_BOOKED_AUDIENCE) {
                 int performanceID;
                 
                 System.out.print("Performance ID: ");
                 performanceID = reader.nextInt();
+                reader.nextLine();
                 
-                cm.printBookedAudience(performanceID);
+                result = cm.printBookedAudience(performanceID);
+                msg.printMessage(result);
             } else if (menu == Menu.PRINT_BOOKING_STATUS) {
                 int performanceID;
                 
                 System.out.print("Performance ID: ");
                 performanceID = reader.nextInt();
+                reader.nextLine();
                 
-                cm.printBookingStatus(performanceID);
+                result = cm.printBookingStatus(performanceID);
+                msg.printMessage(result);
             } else if (menu == Menu.QUIT) {
                 reader.close();
                 msg.printMessage(Messages.QUIT);
